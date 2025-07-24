@@ -1,60 +1,99 @@
 import asyncio
-import asyncssh # type: ignore
 import configparser
+import paramiko # type: ignore
+import threading
+import queue
+import time
 
-class SSHClient:
-    def __init__(self, host, username, password):
-        self.host = host
-        self.username = username
-        self.password = password
-        self.connection = None
+output_queue = queue.Queue()
+input_queue = queue.Queue()
+stop_event = threading.Event()
+ssh_thread = None
 
-    async def connect(self):
-        try:
-            # Establish an SSH connection
-            self.connection = await asyncssh.connect(self.host, username=self.username, password=self.password)
-            print(f'Connected to {self.host}')
-        except Exception as e:
-            print(f'Connection failed: {str(e)}')
+input_queue.put("ls\n")
 
-    async def run_command(self, command):
-        if self.connection is None:
-            print("Not connected to the SSH server.")
-            return
+def ssh_main(host, username, password):
+    print(f"Connecting to '{host}' as '{username}' with password '{password}'")
 
-        try:
-            # Execute the command
-            result = await self.connection.run(command)
-            print(f'Standard Output:\n{result.stdout}')
-            print(f'Standard Error:\n{result.stderr}')
-        except Exception as e:
-            print(f'Command execution failed: {str(e)}')
+    client = paramiko.SSHClient()
+    client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    
+    try:
+        client.connect(host, username = username, password = password)
+    except Exception as e:
+        print("SSH error:", e)
+        return
 
-    async def close(self):
-        if self.connection:
-            await self.connection.close()
-            print('Connection closed.')
+    # Open a session
+    channel = client.invoke_shell(term="tty", width=80, height=25, width_pixels=800, height_pixels=250)
+    
+    while not stop_event.is_set():
+        if not input_queue.empty():
+            command = input_queue.get()
+            channel.send(command + '\n')
+    
+        if channel.recv_ready():
+            output = channel.recv(1022)
+            if output:
+                output_queue.put(output)
+                time.sleep(0.1)
 
-async def main():
+def main():
     # Create a ConfigParser object
     config = configparser.ConfigParser()
 
-    config.read('config.ini')
+    config.read('ssh_data.ini')
     host = config['DEFAULT']['host']
     username = config['DEFAULT']['username']
     password = config['DEFAULT']['password']
 
-    ssh_client = SSHClient(host, username, password)
-    await ssh_client.connect()
 
-    # Run commands in a loop
-    while True:
-        command = input("Enter command to execute (or 'exit' to close): ")
-        if command.lower() == 'exit':
-            break
-        await ssh_client.run_command(command)
+    # Start ssh clinet on a new thread
+    ssh_thread = threading.Thread(target=ssh_main, args=(host, username, password)).start()
 
-    await ssh_client.close()
+    fout = open("outout.txt", "bw")
+
+    try:
+        while True:
+            #command = input("Enter command to execute (or 'exit' to close): ")
+            #if command == "" or command.lower() == 'exit':
+            #    break
+
+            #input_queue.put(command)
+
+            while not output_queue.empty():
+                data = output_queue.get()
+                fout.write(data)
+                print(data)
+                
+                escape = ""
+
+                for b in data:
+                    if escape == "":
+                        if b == 0x1b:
+                            escape = ""
+                            continue
+                    else:
+
+                        print("||")#ANSI Escape
+
+                    if b < 10: pass
+                    if b == 10: print()
+                    if b > 10 and b < 32: pass
+                    if b >= 32 and b <= 126: print(chr(b), end="")
+                    if b > 126: pass
+
+            fout.flush()
+    except KeyboardInterrupt:
+        print("\nExited")
+        pass
+
+    fout.close()
+
+    stop_event.set()
+    time.sleep(0.1)
+    ssh_thread.join()
+
 
 # Run the main function using asyncio
 if __name__ == '__main__':
