@@ -1,0 +1,58 @@
+.menu {
+    position: fixed;
+
+    top: 50%;
+    left: 50%;
+
+    width: 25vw;
+    height: 25vh;
+
+    max-width: 300px;
+    max-height: 500px;
+
+    margin: 0px;
+    padding: 10px;
+
+    border-radius: 10px;
+
+    z-index: 20;
+
+    background-color: #88888888;
+}
+
+.menu .row {
+    width: 100%;
+
+}
+
+.menu #error_message {
+    color: #ff0000;
+    font-weight: bold;
+}
+
+.terminal {
+    position: fixed;
+
+    top: 0px;
+    left: 0px;
+
+    font-family: monospace;
+    font-size: 16px;
+}
+
+.terminal .color {
+    z-index: 0;
+
+    background-color: black;
+}
+
+.terminal .text {
+    z-index: 10;
+
+    background-color: transparent;
+    color: transparent;
+}
+
+.terminal .text::selection {
+    filter: invert(1);
+}

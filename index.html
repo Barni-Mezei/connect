@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- Font awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <link rel="stylesheet" href="public/style.css">
+    <script defer src="public/main.js"></script>
+
+    <title>Connect</title>
+</head>
+<body oncontextmenu="contextMenuOpen()">
+    <main>
+        <div class="terminal color"></div>
+        <textarea class="terminal text" id="terminal_text"></textarea>
+
+        <div class="menu">
+            <div class="row">
+                <p id="error_message"></p>
+            </div>
+            <div class="row">
+                <label for="ssh_address"></label>
+                <input type="text" name="address" id="ssh_address">
+            </div>
+            <div class="row">
+                <label for="ssh_port"></label>
+                <input type="number" name="port" id="ssh_port">
+            </div>
+            <div class="row">
+                <label for="ssh_username"></label>
+                <input type="text" name="username" id="ssh_username">
+            </div>
+            <div class="row">
+                <label for="ssh_password"></label>
+                <input type="password" name="password" id="ssh_password">
+            </div>
+            <div class="row">
+                <button id="connect">Connect</button>
+            </div>
+        </div>
+
+        <div class="contextmenu" id="contextmenu">
+            <div>
+                <i class="fa fa-cut"></i>
+                <span>Copy</span>
+            </div>
+            <div>
+                <i class="fa fa-clipboard"></i>
+                <span>Paste</span>
+            </div>
+        </div>
+    </main>
+</body>
+</html>
