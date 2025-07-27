@@ -1,0 +1,19 @@
+.effect-bold { font-weight: bold; }
+.effect-dim { opacity: 0.5; }
+.effect-italic { font-style: italic; }
+.effect-underline { text-decoration: underline; }
+.effect-slow-blink { animation: blink 400ms linear infinite; }
+.effect-fast-blink { animation: blink 200ms linear infinite; }
+.effect-reverse { filter: invert(1); }
+.effect-hidden { font-weight: lighter; }
+.effect-striketrough { text-decoration: line-through; }
+
+@keyframes blink {
+    0%, 100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.1;
+    }
+}

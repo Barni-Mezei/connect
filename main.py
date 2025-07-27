@@ -119,6 +119,7 @@ def main():
     username = config['DEFAULT']['username']
     password = config['DEFAULT']['password']
 
+    print(f"\033[34mblue\033[m")
 
     # Start ssh clinet on a new thread
     ssh_thread = threading.Thread(target=ssh_main, args=(host, username, password))

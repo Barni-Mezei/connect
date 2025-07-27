@@ -5,8 +5,6 @@ from tornado.options import options, define
 import tornado.httpserver
 import tornado.ioloop
 import tornado.web
-import tornado.wsgi
-import tornado.websocket
 
 import threading
 import os
@@ -25,7 +23,10 @@ class RootHandler(tornado.web.RequestHandler):
     def get(self): self.render(indexHtml)
 
 class NotFoundHandler(tornado.web.RequestHandler):
-    def get(self): self.render(errorHtml)
+    def get(self):
+        #self.render(errorHtml)
+        with open(errorHtml, "r", encoding="utf8") as f:
+            self.write(f.read())
 
 class PublicResourceHandler(tornado.web.StaticFileHandler): pass
 

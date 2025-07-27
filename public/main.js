@@ -79,7 +79,11 @@ Color test:
 ws.onclose = function (e) {
     console.log("Socket closed!", e);
 
-    terminalColor.innerHTML = `<span class="color-fg-red">Websocket connection closed!</span>`;
+    let reason = e.reason;
+    if (reason == "") reason = "Server not responding";
+
+    terminalColor.innerHTML = `<span class="color-fg-red">Websocket connection closed!</span>
+Reason: ${reason}`;
     terminalText.value = "";
 
     terminalColor.contentEditable = false;
@@ -110,13 +114,16 @@ ws.onmessage = function (e) {
             if (data.state == "pass") {
                 //Store user id for later usage
                 sessionStorage.setItem("id", data.id);
+                sessionStorage.setItem("address", data.address);
+                sessionStorage.setItem("port", data.port);
+                sessionStorage.setItem("username", data.username);
 
                 errorMessage.textContent = "";
                 connnectMenu.classList.add("hidden");
 
-                console.log("Logged in with", sessionStorage.getItem("id"), e);
+                console.log("Logged in with", data.id, e);
 
-                terminalColor.innerHTML = `Connecting to SSH...`;
+                terminalColor.innerHTML = `Connecting to <span class="color-fg-bright-black">${data.username}@${data.address}</span>`;
                 terminalText.value = "";
             }
             break;

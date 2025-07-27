@@ -1,10 +1,6 @@
 #!/usr/bin/env python
 
 #Tornado
-import tornado.httpserver
-import tornado.ioloop
-import tornado.web
-import tornado.wsgi
 import tornado.websocket
 import json
 import string
@@ -12,14 +8,15 @@ import string
 from random import randint
 from time import time, sleep
 
-#Import other files
 from color import Color
+from ssh_manager import SSHManager
 
 idLength = 10
 
 #Handles the websocket requests
 class SocketHandler(tornado.websocket.WebSocketHandler):
     clients = []
+    maxClients = 2 # NOTE: Each client requires a new thread 
 
     logMode = "on"
 
@@ -75,6 +72,14 @@ class SocketHandler(tornado.websocket.WebSocketHandler):
         return True
 
     def open(self):
+        if len(SocketHandler.clients) >= SocketHandler.maxClients:
+            if SocketHandler.logMode != "off": #on / reduced
+                print(f"\r{Color.paint(f'Maximum number of clients reached! ({SocketHandler.maxClients})', Color.red)}")
+
+            #raise tornado.web.HTTPError(403, "Connection refused.")
+            self.close(reason="Maximum number of clients reached")
+            return
+    
         newId = SocketHandler.getUID()
 
         # Add user to clients list, send them their ID
@@ -86,7 +91,7 @@ class SocketHandler(tornado.websocket.WebSocketHandler):
         })
 
         if SocketHandler.logMode != "off": #on / reduced
-            print(f"\r{Color.paint(f'User joined', Color.aqua)}")
+            print(f"\r{Color.paint(f'User joined', Color.aqua)} {Color.paint(f'({len(SocketHandler.clients)}/{SocketHandler.maxClients})', Color.gray)}")
 
 
     def on_message(self, message):
@@ -139,7 +144,14 @@ class SocketHandler(tornado.websocket.WebSocketHandler):
             userID = SocketHandler.getUserData(self)["id"]
 
             # Let the client know, it registered successfully, and send them their ID
-            self.write_message({"type": "validate", "state": "pass", "id": userID})
+            self.write_message({
+                "type": "validate",
+                "state": "pass",
+                "id": userID,
+                "address": msg["address"],
+                "port": numericPort,
+                "username": msg["username"],
+            })
 
             SocketHandler.setUserData(self, {
                 "id": userID, # Keep the user id
@@ -151,10 +163,10 @@ class SocketHandler(tornado.websocket.WebSocketHandler):
                 "password": msg["password"]
             })
 
-            print(SocketHandler.getUserDataByID(userID))
-
             if SocketHandler.logMode == "on":
-                print(f"\rUser '{Color.paint(msg['username'], Color.aqua)}' connected to '{Color.paint(msg['address'], Color.gray)}'")
+                print(f"\rUser '{Color.paint(msg['username'], Color.aqua)}' ({Color.paint(userID, Color.gray)}) connecting to '{Color.paint(msg['address'], Color.gray)}'")
+
+            open
 
             return # Do not brodcast this
 
@@ -173,8 +185,8 @@ class SocketHandler(tornado.websocket.WebSocketHandler):
 
         if leavingUserData != None and "id" in leavingUserData and "username" in leavingUserData and "address" in leavingUserData:
             if SocketHandler.logMode != "off": #on / reduced
-                print(f"\r{Color.paint(leavingUserData['username'], Color.aqua)} \
+                print(f"\rUser '{Color.paint(leavingUserData['username'], Color.aqua)}' \
 ({Color.paint(leavingUserData['id'], Color.gray)}) \
-disconnected from {Color.paint(leavingUserData['address'], Color.gray)}")
+disconnected {Color.paint(f'({len(SocketHandler.clients)}/{SocketHandler.maxClients})', Color.gray)}")
 
         SocketHandler.clients = SocketHandler.removeUser(self)
