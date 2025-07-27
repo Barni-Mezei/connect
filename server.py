@@ -14,7 +14,6 @@ import os
 #Import other files
 from color import Color
 from socket_handler import SocketHandler
-from cli_tool import *
 
 define('port', type = int, default = 5500)
 define('address', type = str, default = "0.0.0.0")
@@ -30,7 +29,7 @@ def main():
     tornado_app = tornado.web.Application([
         ('/', RootHandler),
         (r'/websocket', SocketHandler),
-        (r"/public/(.*)", PublicResourceHandler, {"path": "./public/"}),
+        (r'/public/(.*)', PublicResourceHandler, {"path": "./public/"}),
 
     ])
     server = tornado.httpserver.HTTPServer(tornado_app)
@@ -39,9 +38,9 @@ def main():
     print(Color.paint("Server started", Color.green))
 
     #Start CLI worker on a separate thread
-    cli_worker = threading.Thread(target = execute_cli)
-    cli_worker.daemon = True
-    cli_worker.start()
+    #cli_worker = threading.Thread(target = execute_cli)
+    #cli_worker.daemon = True
+    #cli_worker.start()
 
     #Start server
     tornado.ioloop.IOLoop.instance().start()

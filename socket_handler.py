@@ -13,7 +13,6 @@ from random import randint
 from time import time, sleep
 
 #Import other files
-from data import Level
 from color import Color
 
 idLength = 10
@@ -22,113 +21,7 @@ idLength = 10
 class SocketHandler(tornado.websocket.WebSocketHandler):
     clients = []
 
-    teamScores = {
-        "red": 0,
-        "blue": 0,
-        "green": 0,
-        "yellow": 0,
-    }
-
-    teamColors = {
-        "red": Color.red,
-        "blue": Color.blue,
-        "green": Color.green,
-        "yellow": Color.yellow,
-    }
-
     logMode = "on"
-
-    settings = {
-        "frendlyFire": False,
-    }
-
-    """
-    Settings manager    
-    """
-
-    def synchroniseSettings():
-        for c in SocketHandler.clients:
-            try: c["socket"].write_message({"event": "syncServer", "subEvent": "settings", "settings": SocketHandler.settings})
-            except: pass
-
-
-    """
-    Getters
-    """
-
-    def getNumberOfClients():
-        return len(SocketHandler.clients)
-
-    def getPlayersInTeam(teamName : str) -> list:
-        return list( filter(lambda c: c["gameData"]["team"] == teamName if "team" in c["gameData"] else False, SocketHandler.clients) )
-
-    def getNumberOfPlayersInTeam(teamName : str) -> int:
-        return len(SocketHandler.getPlayersInTeam(teamName))
-
-
-    """
-    Score managing methods
-    """
-
-    def getTeamName(teamName : str) -> str:
-        if teamName in SocketHandler.teamScores and teamName in SocketHandler.teamColors:
-            return Color.paint(teamName, SocketHandler.teamColors[teamName])
-        else:
-            return Color.paint("unknown", Color.gray)
-
-
-    def getColoredName(name : str, teamName : str) -> str:
-        """Colors a player's name to it's teams color"""
-        if teamName in SocketHandler.teamScores and teamName in SocketHandler.teamColors:
-            return Color.paint(name, SocketHandler.teamColors[teamName])
-        else:
-            return Color.paint(name, Color.gray)
-
-    def logTeamScores():
-        #Log the teams by sorted order
-        for index, team in enumerate( sorted(SocketHandler.teamScores, key = lambda a : SocketHandler.teamScores[a], reverse = True) ):
-            memberColor = Color.gray if SocketHandler.getNumberOfPlayersInTeam(team) == 0 else Color.aqua
-            scoreColor = Color.gray if SocketHandler.teamScores[team] == 0 else Color.aqua
-            print(f"{SocketHandler.getTeamName(team)}\tMembers: {Color.paint(SocketHandler.getNumberOfPlayersInTeam(team), memberColor)}\tScore: {Color.paint(SocketHandler.teamScores[team], scoreColor)}")
-
-
-    def setTeamScore(teamName : str, value : int):
-        if not teamName in SocketHandler.teamScores: raise KeyError(f"No team found with name: {teamName}")
-
-        SocketHandler.teamScores[teamName] = value
-    
-
-    def resetTeamScore(teamName : str):
-        if teamName == "all":
-            for team in SocketHandler.teamScores:
-                SocketHandler.teamScores[team] = 0
-        else:
-            SocketHandler.setTeamScore(teamName, 0)
-
-
-    def addTeamScore(teamName : str, value : int):
-        if not teamName in SocketHandler.teamScores: raise KeyError(f"No team found with name: {teamName}")
-
-        SocketHandler.teamScores[teamName] += value
-
-
-    def removeTeamScore(teamName : str, value : int):
-        if not teamName in SocketHandler.teamScores: raise KeyError(f"No team found with name: {teamName}")
-
-        SocketHandler.teamScores[teamName] -= value
-
-
-    def getTeamsJSON() -> dict:
-        """Returns a JSON containing all team data (name, score, number of members)"""
-        out = SocketHandler.teamScores.copy()
-        for team, score in out.items():
-            out[team] = {
-                "score": score,
-                "members": SocketHandler.getNumberOfPlayersInTeam(team)
-            }
-
-        return out
-
 
     """
     Player handling methods
@@ -150,198 +43,102 @@ class SocketHandler(tornado.websocket.WebSocketHandler):
 
         return newId
 
-    #Sets the game data by socket
-    def setPlayerData(socket, data):
+    # Sets the game data by socket
+    def setUserData(socket, data):
         match = list( filter(lambda a : a[1]["socket"] == socket, enumerate(SocketHandler.clients)) )
         if len(match) == 0: return
         else:
             index = match[0][0]
-            SocketHandler.clients[index]["gameData"] = data
-
-    #Update the game data by socket (updates only the given keys) retuns the matched clients
-    def updatePlayerData(socket, data) -> int:
-        match = list( filter(lambda a : a[1]["socket"] == socket, enumerate(SocketHandler.clients)) )
-        if len(match) == 0: return 0
-        else:
-            index = match[0][0]
-            for key in data:
-                SocketHandler.clients[index]["gameData"][key] = data[key]
-        return len(match)
+            SocketHandler.clients[index]["data"] = data
 
     #Gets the game data by socket
-    def getPlayerData(socket):
+    def getUserData(socket):
         match = list( filter(lambda a : a["socket"] == socket, SocketHandler.clients) )
         if len(match) == 0: return None
-        else: return match[0]["gameData"]
+        else: return match[0]["data"]
 
     #Gets the game data by id
-    def getPlayerDataByID(id):
-        match = list( filter(lambda a : a["gameData"]["id"] == id, SocketHandler.clients) )
+    def getUserDataByID(id):
+        match = list( filter(lambda a : a["data"]["id"] == id, SocketHandler.clients) )
         if len(match) == 0: return None
-        else: return match[0]["gameData"]
+        else: return match[0]["data"]
 
-    #Gets the game data by short id (4 characters)
-    def getPlayerDataByShortID(shortId):
-        match = list( filter(lambda a : a["gameData"]["id"][:4] == shortId, SocketHandler.clients) )
-        if len(match) == 0: return None
-        else: return match[0]["gameData"]
-
-    #Gets the FULL DATA socket by id
-    def getClientDataByID(id):
-        match = list( filter(lambda a : a["gameData"]["id"] == id, SocketHandler.clients) )
-        if len(match) == 0: return None
-        else: return match[0]
-
-    #Gets the FULL DATA socket by short id (4 characters)
-    def getClientDataByShortID(shortId):
-        match = list( filter(lambda a : a["gameData"]["id"][:4] == shortId, SocketHandler.clients) )
-        if len(match) == 0: return None
-        else: return match[0]
-
-    def removePlayer(socket):
+    def removeUser(socket):
         return list( filter(lambda a : a["socket"] != socket, SocketHandler.clients) )
 
-
-    def getPlayersJSON():
-        out = {}
-        for c in list( map(lambda a : a["gameData"], SocketHandler.clients) ):
-            out[c["id"]] = c
-        return out
-
-
-    """
-    Game logic handlers
-    """
-
-    def restart_game():
-        """Starts a new game, with the selected level"""
-
-        SocketHandler.resetTeamScore("all")
-        SocketHandler.synchroniseScore()
-
-        #Send new level
-        for c in SocketHandler.clients:
-            try: c["socket"].write_message({"event": "syncServer", "subEvent": "level", "level": Level.getJSON()})
-            except: pass
-
-    def synchroniseScore():
-        #Send new scores
-        for c in SocketHandler.clients:
-            try: c["socket"].write_message({"event": "syncServer", "subEvent": "score", "teams": SocketHandler.getTeamsJSON()})
-            except: pass
 
     """
     Socket handling methods
     """
-    def disconnectPlayerByShortID(shortId, reason = "Kicked by the server"):
-        """Kicks a player, recognised by the short id"""
-        playerData = SocketHandler.getClientDataByShortID(shortId)
-        if playerData == None:
-            print(f"{Color.paint(f'No player found with short id of: {shortId}', Color.red)}")
-            return
-        playerData["socket"].write_message({"event": "kick", "reason": reason})
-        SocketHandler.clients = SocketHandler.removePlayer(playerData["socket"])
-        print(f"{SocketHandler.getColoredName(playerData['gameData']['name'], playerData['gameData']['team'])} was kicked.")
-        return
 
     def check_origin(self, origin) -> bool:
         return True
 
-
     def open(self):
-        """Someone connects to the server, send initial data to them"""
-
         newId = SocketHandler.getUID()
 
-        #Add player to clients list
+        # Add user to clients list, send them their ID
         SocketHandler.clients.append({
             "socket": self,
-            "gameData": {
+            "data": {
                 "id": newId,
             }
         })
 
         if SocketHandler.logMode != "off": #on / reduced
-            print(f"\r### {Color.paint(f'Client joined', Color.aqua)} now serving {SocketHandler.getNumberOfClients()} clients")
+            print(f"\r{Color.paint(f'User joined', Color.aqua)}")
 
 
     def on_message(self, message):
         msg = json.loads(message)
 
-        if not "event" in msg: return
+        if not "type" in msg: return
 
-        #Update player data on the server
-        if msg["event"] == "sync":
-            if SocketHandler.getPlayerDataByID(msg["id"]) == None: return
+        # Somebody executed a command
+        if msg["type"] == "command":
+            if SocketHandler.getUserDataByID(msg["id"]) == None: return
 
-            SocketHandler.updatePlayerData(self, msg)
-            clientData = SocketHandler.getPlayerData(self)
-            msg["name"] = clientData["name"]
-            msg["team"] = clientData["team"]
-
-        if msg["event"] == "lobby":
-            self.write_message({"event": "syncServer", "subEvent": "lobby", "teams": SocketHandler.getTeamsJSON()})
+            # TODO terminal
             return
 
-        #Somebody got hit (do not broadcast it)
-        if msg["event"] == "hit":
-            hitPlayerData = SocketHandler.getClientDataByID(msg["hitPlayerID"])
-            if hitPlayerData == None: return
-            killerData = SocketHandler.getClientDataByID(msg["id"])
-            if killerData == None: return
-            if (not SocketHandler.settings["frendlyFire"]) and killerData["gameData"]["team"] == hitPlayerData["gameData"]["team"]:
-                if SocketHandler.logMode != "off":
-                    print(f"Frendly fire cheater: {Color.paint(killerData['gameData']['id'], Color.aqua)} as {SocketHandler.getColoredName(killerData['gameData']['name'], killerData['gameData']['team'])}")
+        if msg["type"] == "connect":
+            # Initialise user data
+            clientId = SocketHandler.getUserData(self)["id"]
+
+            # Validate input
+            if msg["address"] == "":
+                self.write_message({"event": "validate", "state": "fail", "reason": "Address cannot be empty!"})
                 return
 
-            hitPlayerData["socket"].write_message({"event": "syncServer", "subEvent": "hit", "killer": msg["id"]})
-            return
+            if msg["port"] == "":
+                self.write_message({"event": "validate", "state": "fail", "reason": "Port cannot be empty!"})
+                return
 
-        #Somebody got killed!
-        if msg["event"] == "death":
-            victimData = SocketHandler.getPlayerDataByID(msg["id"])
-            killerData = SocketHandler.getPlayerDataByID(msg["killer"])
+            if len(msg["port"]) > 5:
+                self.write_message({"event": "validate", "state": "fail", "reason": "Invalid port!"})
+                return
 
-            SocketHandler.addTeamScore(killerData["team"], 1)
+            numericPort = 0
+            try:
+                numericPort = int(msg["port"])
+            except:
+                self.write_message({"event": "validate", "state": "fail", "reason": "Invalid port!"})
+                return
 
-            #Broadcast score change
-            for c in SocketHandler.clients:
-                try: c["socket"].write_message({"event": "syncServer", "subEvent": "score", "teams": SocketHandler.getTeamsJSON()})
-                except: pass
+            if msg["username"] == "":
+                self.write_message({"event": "validate", "state": "fail", "reason": "Username cannot be empty!"})
+                return
+
+            if msg["password"] == "":
+                self.write_message({"event": "validate", "state": "fail", "reason": "Password cannot be empty!"})
+                return
+
+            SocketHandler.setUserData(self, {"id": clientId, "address": msg["address"], "port": numericPort, "username": msg["username"], "password": msg["password"]})
 
             if SocketHandler.logMode == "on":
-                print(f"\r### {SocketHandler.getColoredName(killerData['name'], killerData['team'])} killed {SocketHandler.getColoredName(victimData['name'], victimData['team'])}")
+                print(f"\rUser '{Color.paint(msg['name'], Color.aqua)}' connected to '{Color.paint(msg['address'], Color.gray)}'")
 
-        if msg["event"] == "join":
-            #Initialise player data
-            clientId = SocketHandler.getPlayerData(self)["id"]
-            newName = msg["name"]
-            newTeam = msg["team"]
-
-            #Validate input
-            if newName == "":
-                self.write_message({"event": "validate", "state": "fail", "reason": "Name must not be empty!"})
-                return
-
-            if len(newName) > 8:
-                self.write_message({"event": "validate", "state": "fail", "reason": "Name is too long! (Max. 8 characters)"})
-                return
-
-            if not newTeam in SocketHandler.teamScores:
-                self.write_message({"event": "validate", "state": "fail", "reason": f"Invalid team: '{newTeam}'"})
-                return
-
-            SocketHandler.setPlayerData(self, {"id": clientId, "name": newName, "team": newTeam})
-
-            if SocketHandler.logMode == "on":
-                print(f"\r### {Color.paint(msg['name'], Color.gray)} joined to team {SocketHandler.getTeamName(msg['team'])} ({SocketHandler.getNumberOfPlayersInTeam(msg['team'])})")
-
-            #Broadcast join message
-            for c in SocketHandler.clients:
-                if c["socket"] == self: self.write_message({"event": "validate", "state": "success", "id": clientId, "name": newName, "team": newTeam, "level": Level.getJSON(), "settings": SocketHandler.settings})
-                else: c["socket"].write_message('{"event": "join", "id": "'+clientId+'", "name": "'+newName+'", "team":"'+newTeam+'"}')
-
-            return
+            return # Do not brodcast this
 
         ######################################################################
         # Add timestamp & broadcast message to all clients (except for self) #
@@ -354,18 +151,12 @@ class SocketHandler(tornado.websocket.WebSocketHandler):
 
 
     def on_close(self):
-        leavingClientData = SocketHandler.getPlayerData(self)
+        leavingUserData = SocketHandler.getUserData(self)
 
-        if leavingClientData != None and "id" in leavingClientData and "name" in leavingClientData and "team" in leavingClientData:
-            id = leavingClientData["id"]
-            name = leavingClientData["name"]
-            team = leavingClientData["team"]
-            for c in SocketHandler.clients:
-                if c["socket"] == self: continue
-                try: c["socket"].write_message({"event": "leave", "id": id, "name": name, "team": team})
-                except: pass
-
+        if leavingUserData != None and "id" in leavingUserData and "username" in leavingUserData and "address" in leavingUserData:
             if SocketHandler.logMode != "off": #on / reduced
-                print(f"\r### {Color.paint(leavingClientData['name'], Color.gray)} {Color.paint(f'left the game', Color.aqua)} now serving {SocketHandler.getNumberOfClients()} clients")
+                print(f"\r{Color.paint(leavingUserData['username'], Color.aqua)} \
+({Color.paint(leavingUserData['id'], Color.gray)}) \
+disconnected from {Color.paint(leavingUserData['addres'], Color.gray)}")
 
-        SocketHandler.clients = SocketHandler.removePlayer(self)
+        SocketHandler.clients = SocketHandler.removeUser(self)
