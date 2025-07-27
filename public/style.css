@@ -11,6 +11,10 @@ body {
     font-size: 20px;
 }
 
+.hidden {
+    display: none !important;
+}
+
 .menu {
     position: fixed;
     display: flex;
@@ -108,6 +112,12 @@ body {
     user-select: none;
 }
 
+.terminal.color span {
+    white-space: inherit;
+    word-wrap: inherit;
+    user-select: inherit;
+}
+
 .terminal.text {
     z-index: 10;
 
@@ -118,12 +128,20 @@ body {
     outline: none;
 }
 
+.terminal.text.disabled {
+    pointer-events: none;
+    caret-color: transparent;
+}
+
 .terminal.text::selection {
     color: white;
     background-color: #00aaff;
 }
 
+/* Right-clik menu */
 .contextmenu {
+    z-index: 100;
+
     background-color: #88888888;
     color: white;
 

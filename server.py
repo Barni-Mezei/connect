@@ -19,9 +19,13 @@ define('port', type = int, default = 5500)
 define('address', type = str, default = "0.0.0.0")
 
 indexHtml = "index.html"
+errorHtml = "404.html"
 
 class RootHandler(tornado.web.RequestHandler):
     def get(self): self.render(indexHtml)
+
+class NotFoundHandler(tornado.web.RequestHandler):
+    def get(self): self.render(errorHtml)
 
 class PublicResourceHandler(tornado.web.StaticFileHandler): pass
 
@@ -30,6 +34,7 @@ def main():
         ('/', RootHandler),
         (r'/websocket', SocketHandler),
         (r'/public/(.*)', PublicResourceHandler, {"path": "./public/"}),
+        (r".*", NotFoundHandler)
 
     ])
     server = tornado.httpserver.HTTPServer(tornado_app)

@@ -15,10 +15,10 @@
 </head>
 <body oncontextmenu="contextMenuOpen()">
     <main>
-        <pre class="terminal color" id="terminal_color">Please, connect to a server!</pre>
+        <pre class="terminal color" id="terminal_color">Connecting...</pre>
         <textarea class="terminal text" id="terminal_text" autocapitalize="off" autocorrect="off" spellcheck="false" autocomplete="off"></textarea>
 
-        <div class="menu">
+        <div class="menu" id="connect_menu">
             <div class="row">
                 <p id="error_message"></p>
             </div>
@@ -28,7 +28,7 @@
             </div>
             <div class="row">
                 <label for="ssh_port">Port</label>
-                <input type="number" name="port" id="ssh_port" autocomplete="off">
+                <input type="number" name="port" id="ssh_port" value="22" autocomplete="off">
             </div>
             <div class="row">
                 <label for="ssh_username">Username</label>
@@ -39,11 +39,11 @@
                 <input type="password" name="password" id="ssh_password" autocomplete="off">
             </div>
             <div class="row">
-                <button id="connect">Connect</button>
+                <button id="connect_button">Connect</button>
             </div>
         </div>
 
-        <div class="contextmenu" id="contextmenu">
+        <div class="contextmenu" id="context_menu">
             <div class="item">
                 <i class="fa fa-cut"></i>
                 <span>Copy</span>

@@ -90,7 +90,12 @@ class SocketHandler(tornado.websocket.WebSocketHandler):
 
 
     def on_message(self, message):
-        msg = json.loads(message)
+        msg = None
+
+        try:
+            msg = json.loads(message)
+        except:
+            return
 
         if not "type" in msg: return
 
@@ -102,41 +107,54 @@ class SocketHandler(tornado.websocket.WebSocketHandler):
             return
 
         if msg["type"] == "connect":
-            # Initialise user data
-            clientId = SocketHandler.getUserData(self)["id"]
-
             # Validate input
-            if msg["address"] == "":
-                self.write_message({"event": "validate", "state": "fail", "reason": "Address cannot be empty!"})
+            if (not "address" in msg) or msg["address"] == "":
+                self.write_message({"type": "validate", "state": "fail", "reason": "Address cannot be empty!"})
                 return
 
-            if msg["port"] == "":
-                self.write_message({"event": "validate", "state": "fail", "reason": "Port cannot be empty!"})
+            if (not "port" in msg) or msg["port"] == "":
+                self.write_message({"type": "validate", "state": "fail", "reason": "Port cannot be empty!"})
                 return
 
             if len(msg["port"]) > 5:
-                self.write_message({"event": "validate", "state": "fail", "reason": "Invalid port!"})
+                self.write_message({"type": "validate", "state": "fail", "reason": "Invalid port!"})
                 return
 
             numericPort = 0
             try:
                 numericPort = int(msg["port"])
             except:
-                self.write_message({"event": "validate", "state": "fail", "reason": "Invalid port!"})
+                self.write_message({"type": "validate", "state": "fail", "reason": "Invalid port!"})
                 return
 
-            if msg["username"] == "":
-                self.write_message({"event": "validate", "state": "fail", "reason": "Username cannot be empty!"})
+            if (not "username" in msg) or msg["username"] == "":
+                self.write_message({"type": "validate", "state": "fail", "reason": "Username cannot be empty!"})
                 return
 
-            if msg["password"] == "":
-                self.write_message({"event": "validate", "state": "fail", "reason": "Password cannot be empty!"})
+            if (not "password" in msg) or msg["password"] == "":
+                self.write_message({"type": "validate", "state": "fail", "reason": "Password cannot be empty!"})
                 return
 
-            SocketHandler.setUserData(self, {"id": clientId, "address": msg["address"], "port": numericPort, "username": msg["username"], "password": msg["password"]})
+            # Get user ID
+            userID = SocketHandler.getUserData(self)["id"]
+
+            # Let the client know, it registered successfully, and send them their ID
+            self.write_message({"type": "validate", "state": "pass", "id": userID})
+
+            SocketHandler.setUserData(self, {
+                "id": userID, # Keep the user id
+                "login_time": time(),
+                "has_ssh": False,
+                "address": msg["address"],
+                "port": numericPort,
+                "username": msg["username"],
+                "password": msg["password"]
+            })
+
+            print(SocketHandler.getUserDataByID(userID))
 
             if SocketHandler.logMode == "on":
-                print(f"\rUser '{Color.paint(msg['name'], Color.aqua)}' connected to '{Color.paint(msg['address'], Color.gray)}'")
+                print(f"\rUser '{Color.paint(msg['username'], Color.aqua)}' connected to '{Color.paint(msg['address'], Color.gray)}'")
 
             return # Do not brodcast this
 
@@ -144,10 +162,10 @@ class SocketHandler(tornado.websocket.WebSocketHandler):
         # Add timestamp & broadcast message to all clients (except for self) #
         ######################################################################
         #msg["time"] = time()
-        for c in SocketHandler.clients:
-            if msg["event"] != "death" and c["socket"] == self: continue
-            try: c["socket"].write_message(msg)
-            except: pass
+        #for c in SocketHandler.clients:
+        #    if msg["event"] != "death" and c["socket"] == self: continue
+        #    try: c["socket"].write_message(msg)
+        #    except: pass
 
 
     def on_close(self):
@@ -157,6 +175,6 @@ class SocketHandler(tornado.websocket.WebSocketHandler):
             if SocketHandler.logMode != "off": #on / reduced
                 print(f"\r{Color.paint(leavingUserData['username'], Color.aqua)} \
 ({Color.paint(leavingUserData['id'], Color.gray)}) \
-disconnected from {Color.paint(leavingUserData['addres'], Color.gray)}")
+disconnected from {Color.paint(leavingUserData['address'], Color.gray)}")
 
         SocketHandler.clients = SocketHandler.removeUser(self)
