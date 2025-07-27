@@ -1,0 +1,46 @@
+/* 
+Reference: https://i.sstatic.net/9UVnC.png
+Color theme: UBUNTU
+*/
+
+/* Foreground colors */
+.color-fg-black { color: rgb(1, 1, 1); }
+.color-fg-red { color: rgb(255, 56, 43); }
+.color-fg-green { color: rgb(54, 181, 74); }
+.color-fg-yellow { color: rgb(255, 199, 6); }
+.color-fg-blue { color: rgb(0, 111, 184); }
+.color-fg-magenta { color: rgb(118, 38, 113); }
+.color-fg-cyan { color: rgb(44, 181, 233); }
+.color-fg-white { color: rgb(204, 204, 204); }
+
+/* Bright foreground colors */
+.color-fg-bright-black { color: rgb(128, 128, 128); }
+.color-fg-bright-red { color: rgb(255, 0, 0); }
+.color-fg-bright-green { color: rgb(0, 255, 0); }
+.color-fg-bright-yellow { color: rgb(255, 255, 0); }
+.color-fg-bright-blue { color: rgb(0, 0, 255); }
+.color-fg-bright-magenta { color: rgb(255, 0, 255); }
+.color-fg-bright-cyan { color: rgb(0, 255, 255); }
+.color-fg-bright-white { color: rgb(255, 255, 255); }
+
+
+
+/* Background colors */
+.color-bg-black { background-color: rgb(1, 1, 1); }
+.color-bg-red { background-color: rgb(255, 56, 43); }
+.color-bg-green { background-color: rgb(54, 181, 74); }
+.color-bg-yellow { background-color: rgb(255, 199, 6); }
+.color-bg-blue { background-color: rgb(0, 111, 184); }
+.color-bg-magenta { background-color: rgb(118, 38, 113); }
+.color-bg-cyan { background-color: rgb(44, 181, 233); }
+.color-bg-white { background-color: rgb(204, 204, 204); }
+
+/* Bright background colors*/
+.color-bg-bright-black { background-color: rgb(128, 128, 128); }
+.color-bg-bright-red { background-color: rgb(255, 0, 0); }
+.color-bg-bright-green { background-color: rgb(0, 255, 0); }
+.color-bg-bright-yellow { background-color: rgb(255, 255, 0); }
+.color-bg-bright-blue { background-color: rgb(0, 0, 255); }
+.color-bg-bright-magenta { background-color: rgb(255, 0, 255); }
+.color-bg-bright-cyan { background-color: rgb(0, 255, 255); }
+.color-bg-bright-white { background-color: rgb(255, 255, 255); }

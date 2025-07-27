@@ -8,34 +8,35 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
     <link rel="stylesheet" href="public/style.css">
+    <link id="color_theme" rel="stylesheet" href="public/colors/ubuntu.css">
     <script defer src="public/main.js"></script>
 
     <title>Connect</title>
 </head>
 <body oncontextmenu="contextMenuOpen()">
     <main>
-        <div class="terminal color">Some text here</div>
-        <textarea class="terminal text" id="terminal_text"></textarea>
+        <pre class="terminal color" id="terminal_color">Please, connect to a server!</pre>
+        <textarea class="terminal text" id="terminal_text" autocapitalize="off" autocorrect="off" spellcheck="false" autocomplete="off"></textarea>
 
         <div class="menu">
             <div class="row">
                 <p id="error_message"></p>
             </div>
             <div class="row">
-                <label for="ssh_address"></label>
-                <input type="text" name="address" id="ssh_address">
+                <label for="ssh_address">Address</label>
+                <input type="text" name="address" id="ssh_address" autocomplete="off">
             </div>
             <div class="row">
-                <label for="ssh_port"></label>
-                <input type="number" name="port" id="ssh_port">
+                <label for="ssh_port">Port</label>
+                <input type="number" name="port" id="ssh_port" autocomplete="off">
             </div>
             <div class="row">
-                <label for="ssh_username"></label>
-                <input type="text" name="username" id="ssh_username">
+                <label for="ssh_username">Username</label>
+                <input type="text" name="username" id="ssh_username" autocomplete="off">
             </div>
             <div class="row">
-                <label for="ssh_password"></label>
-                <input type="password" name="password" id="ssh_password">
+                <label for="ssh_password">Password</label>
+                <input type="password" name="password" id="ssh_password" autocomplete="off">
             </div>
             <div class="row">
                 <button id="connect">Connect</button>

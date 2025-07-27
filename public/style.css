@@ -5,6 +5,7 @@ body {
     margin: 0px;
 
     background-color: #000000;
+    color: white;
 
     font-family: monospace;
     font-size: 20px;
@@ -12,6 +13,12 @@ body {
 
 .menu {
     position: fixed;
+    display: flex;
+
+    flex-flow: column nowrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 5px;
 
     top: 50%;
     left: 50%;
@@ -21,8 +28,10 @@ body {
     width: 25vw;
     height: 25vh;
 
-    max-width: 300px;
+    max-width: 500px;
     max-height: 500px;
+
+    min-width: 200px;
 
     margin: 0px;
     padding: 10px;
@@ -32,11 +41,37 @@ body {
     z-index: 20;
 
     background-color: #88888888;
+
+    font-family: monospace;
+    font-size: 20px;
 }
 
 .menu .row {
-    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    
+    column-gap: 5px;
 
+    width: 100%;
+}
+
+.menu .row:first-child, .menu .row:last-child {
+    grid-template-columns: 1fr;
+}
+
+.menu .row input {
+    width: auto;
+    min-width: 3em;
+
+    font-family: inherit;
+    font-size: inherit;
+
+    outline: none;
+
+    background-color: transparent;
+    color: white;
+    border: 2px solid #888888;
+    border-radius: 5px;
 }
 
 .menu #error_message {
@@ -67,6 +102,10 @@ body {
 
 .terminal.color {
     z-index: 0;
+
+    white-space: pre;
+    word-wrap: normal;
+    user-select: none;
 }
 
 .terminal.text {
@@ -79,8 +118,9 @@ body {
     outline: none;
 }
 
-.terminal .text::selection {
-    filter: invert(1);
+.terminal.text::selection {
+    color: white;
+    background-color: #00aaff;
 }
 
 .contextmenu {
