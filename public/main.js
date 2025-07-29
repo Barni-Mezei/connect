@@ -66,11 +66,33 @@ formInputs.forEach(function (f) {
     }
 });
 
+//Synchronises the terminal text to the visual one
+function syncTerminalText() {
+    let terminalTextDisplay = document.getElementById("terminal_text_display");
+
+    if (!terminalTextDisplay) return;
+
+    let textBeforeCursor = terminalText.value.substring(0, terminalText.selectionStart);
+    let textUnderCursor = terminalText.value[terminalText.selectionStart] ?? " ";
+    let textAfterCursor = terminalText.value.substring(terminalText.selectionStart + 1, terminalText.value.length + 1);
+
+    terminalTextDisplay.innerHTML = `${textBeforeCursor}<span class="effect-reverse">${textUnderCursor}</span>${textAfterCursor}`;
+}
+
+// on blur, re-grab focus
 terminalText.onblur = function (e) {
     terminalText.focus();
 }
 
+terminalText.onfocus = function (e) {
+    terminalText.selectionStart = terminalText.value.length;
+    terminalText.selectionEnd = terminalText.value.length;
+    syncTerminalText();
+}
+
 terminalText.onkeydown = function (e) {
+    syncTerminalText();
+
     if (e.ctrlKey || e.altKey) {
         if (e.key == "Control" || e.key == "Alt") return;
 
@@ -86,16 +108,15 @@ terminalText.onkeydown = function (e) {
         sendCommand(terminalText.value);
         terminalText.value = "";
     }
-
-    e.stopPropagation();
 }
 
-terminalText.oninput = function (e) {
-    let terminalTextDisplay = document.getElementById("terminal_text_display");
+terminalText.onkeyup = function (e) {
+    syncTerminalText();
+}
 
-    if (terminalTextDisplay) {
-        terminalTextDisplay.textContent = terminalText.value;
-    }
+//Update visual text on typing
+terminalText.onbeforeinput = function (e) {
+    syncTerminalText();
 }
 
 //Create websocket
@@ -238,7 +259,7 @@ ws.onmessage = function (e) {
                 //console.log("SSH Info", data.message);
 
                 terminalColor.innerHTML += `SSH Info: <span class="color-fg-bright-green">${data.message}</span>\n`;
-                terminalText.value = "";
+                terminalText.value = "Hello, world!";
 
                 terminalColor.contentEditable = false;
                 terminalText.disabled = true;
@@ -257,6 +278,7 @@ ws.onmessage = function (e) {
                 terminalColor.contentEditable = false;
                 terminalText.disabled = false;
                 terminalText.focus();
+                syncTerminalText();
             }
 
             break;

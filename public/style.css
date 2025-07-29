@@ -1,3 +1,10 @@
+:root {
+    --color-default-fg: white;
+    --color-default-bg: black;
+    --color-default-font: monospace;
+    --color-default-font-size: 16px;
+}
+
 body {
     width: 100vw;
     height: 100vh;
@@ -158,7 +165,12 @@ body {
 }
 
 .terminal span#terminal_text_display {
-    border-right: 2px solid white;
+    background-color: inherit;
+    color: inherit;
+}
+
+.terminal span#terminal_text_display #cursor {
+    filter: invert(1);
 }
 
 #terminal_text_input {
@@ -170,30 +182,24 @@ body {
     margin: 0px;
     padding: 0px;
 
-    pointer-events: none;
-    user-select: none;
-
     font-size: 16px;
     font-family: monospace;
 
-    background-color: #00000088;
-    color: #00ddff;
-
+    /*background-color: transparent;
+    color: transparent;
     border: none;
-
-    z-index: 40;
-}
-
-#terminal_text_input:focus {
-    filter: invert(1);
     outline: none;
+
+    pointer-events: none;
+    user-select: none;*/
 }
 
-#terminal_text_input:disabled {
-    background-color: #ff000088;
+#terminal_text_input::selection {
+    background-color: transparent;
+    color: transparent;
 }
 
-/* Right-clik menu */
+/* Right-click menu */
 .contextmenu {
     z-index: 100;
 
