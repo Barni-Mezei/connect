@@ -6,8 +6,7 @@ import tornado.httpserver
 import tornado.ioloop
 import tornado.web
 
-import threading
-import os
+import signal
 
 #Import other files
 from color import Color
@@ -43,11 +42,6 @@ def main():
 
     print(Color.paint("Server started", Color.green))
 
-    #Start CLI worker on a separate thread
-    #cli_worker = threading.Thread(target = execute_cli)
-    #cli_worker.daemon = True
-    #cli_worker.start()
-
     #Start server
     try:
         tornado.ioloop.IOLoop.instance().start()
@@ -55,7 +49,8 @@ def main():
         SocketHandler.fullStop()
         tornado.ioloop.IOLoop.instance().stop()
 
-    print(Color.paint("\nServer stopped", Color.red))
+    # '\b\b' to remove '^C'
+    print(Color.paint("\b\bServer stopped", Color.red))
 
 if __name__ == '__main__':
     main()

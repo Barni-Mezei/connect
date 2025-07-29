@@ -127,6 +127,7 @@ body {
 
     margin: 0px;
     padding: 0px;
+    padding-bottom: 1em;
 
     font-family: monospace;
     font-size: 16px;
@@ -135,40 +136,54 @@ body {
     color: white;
 
     border: none;
-}
 
-.terminal.color {
     z-index: 0;
 
     white-space: pre;
     word-wrap: normal;
     user-select: none;
+
+    overflow-y: scroll;
+    overflow-x: hidden;
+
 }
 
-.terminal.color span {
+.terminal span {
     white-space: inherit;
     word-wrap: inherit;
     user-select: inherit;
 }
 
-.terminal.text {
-    z-index: 10;
+#terminal_text_input {
+    position: fixed;
 
-    background-color: transparent;
-    color: transparent;
+    top: 0px;
+    left: 0px;
 
-    resize: none;
+    margin: 0px;
+    padding: 0px;
+
+    pointer-events: none;
+    user-select: none;
+
+    font-size: 16px;
+    font-family: monospace;
+
+    background-color: #00000088;
+    color: #00ddff;
+
+    border: none;
+
+    z-index: 40;
+}
+
+#terminal_text_input:focus {
+    filter: invert(1);
     outline: none;
 }
 
-.terminal.text.disabled {
-    pointer-events: none;
-    caret-color: transparent;
-}
-
-.terminal.text::selection {
-    color: white;
-    background-color: #00aaff;
+#terminal_text_input:disabled {
+    background-color: #ff000088;
 }
 
 /* Right-clik menu */

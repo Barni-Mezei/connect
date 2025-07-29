@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
     <link rel="stylesheet" href="public/style.css">
-    <link id="color_theme" rel="stylesheet" href="public/colors/general.css">
+    <link rel="stylesheet" href="public/colors/general.css">
     <link id="color_theme" rel="stylesheet" href="public/colors/ubuntu.css">
     <script defer src="public/main.js"></script>
 
@@ -16,8 +16,8 @@
 </head>
 <body oncontextmenu="contextMenuOpen()">
     <main>
-        <pre class="terminal color" id="terminal_color">Connecting...</pre>
-        <textarea class="terminal text" id="terminal_text" autocapitalize="off" autocorrect="off" spellcheck="false" autocomplete="off"></textarea>
+        <pre class="terminal" id="terminal_color">Connecting...</pre>
+        <input type="text" id="terminal_text_input" autocomplete="off">
 
         <div class="menu" id="connect_menu">
             <div class="row">

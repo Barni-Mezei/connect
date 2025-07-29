@@ -142,11 +142,17 @@ class SocketHandler(tornado.websocket.WebSocketHandler):
             if userData["has_ssh"] == False: return
 
             if msg["mode"] == "command":
-                # Send command to terminal
-                pass
+                userData["term"].send_command(msg["value"])
+                return
 
             if msg["mode"] == "key":
                 # Send key press to terminal
+                print(msg)
+
+                if msg["modifiers"]["ctrl"]:
+                    userData["term"].send_raw(bytes("^" + msg["value"], encoding = "ascii"))
+
+
                 pass
 
             return
@@ -183,6 +189,9 @@ class SocketHandler(tornado.websocket.WebSocketHandler):
             # Get user ID
             userID = SocketHandler.getUserData(self)["id"]
 
+            if SocketHandler.logMode == "on":
+                print(f"\rUser '{Color.paint(msg['username'], Color.aqua)}' ({Color.paint(userID, Color.gray)}) connecting to '{Color.paint(msg['address'], Color.gray)}'")
+
             # Create terminal
             userTerm = SSHManager(SocketHandler, self, msg["address"], numericPort, msg["username"], msg["password"])
             userTerm.begin()
@@ -207,9 +216,6 @@ class SocketHandler(tornado.websocket.WebSocketHandler):
                 "username": msg["username"],
                 "password": msg["password"]
             })
-
-            if SocketHandler.logMode == "on":
-                print(f"\rUser '{Color.paint(msg['username'], Color.aqua)}' ({Color.paint(userID, Color.gray)}) connecting to '{Color.paint(msg['address'], Color.gray)}'")
 
             return # Do not brodcast this
 

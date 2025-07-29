@@ -4,6 +4,8 @@ import threading
 import queue
 import time
 
+from color import Color
+
 class SSHError(Exception):
     def __init__(self, message):
         self.message = message
@@ -51,8 +53,15 @@ class SSHManager:
 
     # Sends a command to the connected ssh
     def send_command(self, command):
-        self.input_queue.put(command)
+        print(f"SSH: Command received on {self.username}@{self.host}:{self.port} $ {Color.paint(f'{command}', Color.aqua)}")
 
+        self.input_queue.put({"type": "command", "value": command})
+
+    # Sends raw data to the connected ssh
+    def send_raw(self, data):
+        print(f"SSH: Raw received on {self.username}@{self.host}:{self.port} {repr(data)}")
+
+        self.input_queue.put({"type": "data", "value": data})
 
     # Establishes a new ssh connection, and listens to it
     def ssh_main(self):
@@ -73,22 +82,26 @@ class SSHManager:
             return
 
         # Open a new terminal
-        channel = client.invoke_shell(term = self.terminal, width = 80, height = 25)
+        shell = client.invoke_shell(term = self.terminal, width = 80, height = 25, width_pixels = 100, height_pixels = 250)
+        shell.set_combine_stderr(True)
 
         self.socket_handler.sshMessage(self.websocket, "info", "SSH Connection successful!")
         self.socket_handler.sshSetting(self.websocket, "has_ssh", True)
 
-        self.input_queue.put("ls\ncd minecraft\nls -lha")
+        self.input_queue.put({"type": "command", "value": "ls -lha"})
 
         while not self.stop_event.is_set():
             if not self.input_queue.empty():
-                command = self.input_queue.get()
-                if len(command) == 0 or not command[-1] == "\n": command += "\n"
+                entry = self.input_queue.get()
 
-                channel.send(command)
+                if entry["type"] == "command":
+                    if len(entry["value"]) == 0 or not entry["value"][-1] == "\n":
+                        entry["value"] += "\n"
 
-            if channel.recv_ready():
-                output = channel.recv(1024)
+                shell.send(entry["value"])
+
+            if shell.recv_ready():
+                output = shell.recv(1024)
                 #if output:
                 #    self.output_queue.put(output)
 
@@ -164,6 +177,8 @@ class SSHManager:
 
     # Decodes an ansi escape equence into it's base components
     def decodeANSI(self, ansi):
+        #print("ANSI", repr(ansi))
+
         if len(ansi) <= 2: return [0]
 
         values = [int(n) for n in ansi[1:-1].split(";")]
@@ -246,7 +261,7 @@ class SSHManager:
         return out
 
     # Creates a HTML span from the difference of the 2 ansi escape values (from 2, 3, 4 to 3, 5 it will be </span><span class="">)
-    def createSpanFromAnsi(self, ansiFlags):
+    def createSpanFromAnsi(self, ansiFlags, isFirstSpan):
         classes = [
             "color-fg-" + ansiFlags["color"]["fg"],
             "color-bg-" + ansiFlags["color"]["bg"]
@@ -267,17 +282,19 @@ class SSHManager:
         if ansiFlags["effect"]["striketrough"]: classes.append("effect-striketrough")
         if ansiFlags["effect"]["reverse"]: classes.append("effect-reverse")
 
-        return f"</span><span class=\"{' '.join(classes)}\">"
+        return ("" if isFirstSpan else "</span>") + f"<span class=\"{' '.join(classes)}\">"
 
     def htmlFromParsedText(self, parsed_text):
-        out = "<span class=\"start\">"
+        out = ""#"<span class=\"start\">"
         ansi_flags = {}
+        first_span = True
 
         for l in parsed_text:
             if l["type"] == "ansi":
                 ansi_flags = self.setFlags(ansi_flags, self.decodeANSI(l["value"]))
 
-                out += self.createSpanFromAnsi(ansi_flags)
+                out += self.createSpanFromAnsi(ansi_flags, first_span)
+                first_span = False
 
                 continue
 
