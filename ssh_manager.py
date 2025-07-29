@@ -59,7 +59,11 @@ class SSHManager:
 
     # Sends raw data to the connected ssh
     def send_raw(self, data):
-        print(f"SSH: Raw received on {self.username}@{self.host}:{self.port} {repr(data)}")
+        char = "Control" if ord(data) < 32 else "Alt"
+        char += " + "
+        char += chr(ord(data) + 96).upper() if ord(data) < 32 else data
+
+        print(f"SSH: Raw received on {self.username}@{self.host}:{self.port} {Color.paint(f'{repr(data)} ({char})', Color.aqua)} ")
 
         self.input_queue.put({"type": "data", "value": data})
 
@@ -118,7 +122,7 @@ class SSHManager:
                 if len(parsed_text) > 0:
                     outputHtml = self.htmlFromParsedText(parsed_text)
                     self.socket_handler.sshMessage(self.websocket, "data", outputHtml)
-                    time.sleep(0.01)
+                    #time.sleep(0.01)
 
 
     def getHtmlChunk(self):

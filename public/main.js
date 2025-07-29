@@ -66,7 +66,7 @@ formInputs.forEach(function (f) {
     }
 });
 
-terminalColor.onclick = function (e) {
+terminalText.onblur = function (e) {
     terminalText.focus();
 }
 
@@ -88,6 +88,14 @@ terminalText.onkeydown = function (e) {
     }
 
     e.stopPropagation();
+}
+
+terminalText.oninput = function (e) {
+    let terminalTextDisplay = document.getElementById("terminal_text_display");
+
+    if (terminalTextDisplay) {
+        terminalTextDisplay.textContent = terminalText.value;
+    }
 }
 
 //Create websocket
@@ -240,7 +248,10 @@ ws.onmessage = function (e) {
                 //SSH Screen data
                 //console.log("SSH screen", data.message);
 
-                terminalColor.innerHTML += `${data.message}`;
+                //Remove previous text display
+                document.getElementById("terminal_text_display")?.remove();
+
+                terminalColor.innerHTML += `${data.message}<span id="terminal_text_display"></span>`;
                 terminalColor.scrollTop = terminalColor.scrollHeight;
 
                 terminalColor.contentEditable = false;

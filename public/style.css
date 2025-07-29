@@ -141,17 +141,24 @@ body {
 
     white-space: pre;
     word-wrap: normal;
-    user-select: none;
 
     overflow-y: scroll;
     overflow-x: hidden;
 
 }
-
 .terminal span {
     white-space: inherit;
     word-wrap: inherit;
     user-select: inherit;
+}
+
+.terminal::selection, .terminal span::selection {
+    background-color: white;
+    color: black;
+}
+
+.terminal span#terminal_text_display {
+    border-right: 2px solid white;
 }
 
 #terminal_text_input {

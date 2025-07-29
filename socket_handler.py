@@ -147,13 +147,11 @@ class SocketHandler(tornado.websocket.WebSocketHandler):
 
             if msg["mode"] == "key":
                 # Send key press to terminal
-                print(msg)
-
                 if msg["modifiers"]["ctrl"]:
-                    userData["term"].send_raw(bytes("^" + msg["value"], encoding = "ascii"))
+                    userData["term"].send_raw(chr(ord(msg['value']) - 96))
 
-
-                pass
+                if msg["modifiers"]["alt"]:
+                    userData["term"].send_raw("\x1b" + msg['value'].lower())
 
             return
 
@@ -217,17 +215,7 @@ class SocketHandler(tornado.websocket.WebSocketHandler):
                 "password": msg["password"]
             })
 
-            return # Do not brodcast this
-
-        ######################################################################
-        # Add timestamp & broadcast message to all clients (except for self) #
-        ######################################################################
-        #msg["time"] = time()
-        #for c in SocketHandler.clients:
-        #    if msg["event"] != "death" and c["socket"] == self: continue
-        #    try: c["socket"].write_message(msg)
-        #    except: pass
-
+            return
 
     def on_close(self):
         leavingUserData = SocketHandler.getUserData(self)
