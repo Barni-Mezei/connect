@@ -63,6 +63,20 @@ class SocketHandler(tornado.websocket.WebSocketHandler):
     def removeUser(socket):
         return list( filter(lambda a : a["socket"] != socket, SocketHandler.clients) )
 
+    """
+    Server methods
+    """
+
+    # Closesd all terminals and disconnects all users from the server
+    def fullStop():
+        for client in SocketHandler.clients:
+            if "data" in client and "term" in client["data"]:
+                client["data"]["term"].stop()
+
+            client["socket"].close(reason = f"Server was shut down!")
+
+            SocketHandler.removeUser(client["socket"])
+
 
     """
     SSH Manager response functions
@@ -71,6 +85,9 @@ class SocketHandler(tornado.websocket.WebSocketHandler):
     # SSH Connector output
     def sshMessage(socket, type, message):
         socket.write_message({"type": "ssh_message", "category": type, "message": message})
+
+    def sshError(socket, message):
+        socket.close(reason = f"SSH Error: {message}")
 
     # Sets a user's data from the ssh manager
     def sshSetting(socket, param, value):
@@ -208,10 +225,15 @@ class SocketHandler(tornado.websocket.WebSocketHandler):
 
     def on_close(self):
         leavingUserData = SocketHandler.getUserData(self)
-        leavingUserData["term"].stop() # Close ssh terminal and exit the thread
+
+        if "term" in leavingUserData:
+            leavingUserData["term"].stop() # Close ssh terminal and exit the thread
 
         if leavingUserData != None and "id" in leavingUserData and "username" in leavingUserData and "address" in leavingUserData:
             if SocketHandler.logMode != "off": #on / reduced
                 print(f"\rUser '{Color.paint(leavingUserData['username'], Color.aqua)}' ({Color.paint(leavingUserData['id'], Color.gray)}) disconnected {Color.paint(f'({len(SocketHandler.clients)}/{SocketHandler.maxClients})', Color.gray)}")
+
+        elif SocketHandler.logMode != "off":
+            print(f"\r{Color.paint(f'User left', Color.aqua)}")
 
         SocketHandler.clients = SocketHandler.removeUser(self)

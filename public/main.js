@@ -42,6 +42,10 @@ connnectButton.onclick = function () {
     ws.send(JSON.stringify(connectData));
 }
 
+terminalText.onscroll = function (e) {
+    terminalColor.scrollTop = terminalText.scrollTop;
+}
+
 //Create websocket
 const server = window.location.host;
 ws = new WebSocket(`ws://${server}/websocket`);
@@ -53,7 +57,7 @@ ws.onopen = function (e) {
     terminalColor.innerHTML = `Websocket connection successful! Please provide ssh credentials to continue.
 <span class="color-fg-yellow">WARNING: This is NOT an encrypted channel!</span>
 
-Color test:
+Terminal test:
 <span class="color-fg-black">FG</span> <span class="color-bg-black">BG</span> \
 <span class="color-fg-red">FG</span> <span class="color-bg-red">BG</span> \
 <span class="color-fg-green">FG</span> <span class="color-bg-green">BG</span> \
@@ -70,7 +74,20 @@ Color test:
 <span class="color-fg-bright-blue">FG</span> <span class="color-bg-bright-blue">BG</span> \
 <span class="color-fg-bright-magenta">FG</span> <span class="color-bg-bright-magenta">BG</span> \
 <span class="color-fg-bright-cyan">FG</span> <span class="color-bg-bright-cyan">BG</span> \
-<span class="color-fg-bright-white">FG</span> <span class="color-bg-bright-white">BG</span> \
+<span class="color-fg-bright-white">FG</span> <span class="color-bg-bright-white">BG</span>
+
+<span class="effect-bold">Bold</span> \
+<span>Normal</span> \
+<span class="effect-dim">Light</span>
+
+<span class="effect-italic">Italic</span> \
+<span class="effect-underline">Underline</span> \
+<span class="effect-striketrough">Striketrough</span> \
+<span class="effect-reverse color-bg-black">Reverse</span>
+
+<span class="effect-slow-blink">Slow</span> \
+<span class="effect-fast-blink">Fast</span>
+
 `;
     terminalText.value = "";
 };

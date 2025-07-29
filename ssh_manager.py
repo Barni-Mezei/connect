@@ -35,6 +35,8 @@ class SSHManager:
         self.password = password
         self.terminal = terminal
 
+        self.stop_event = threading.Event()
+
     # Starts a new thread, and an SSh connection
     def begin(self):
         self.ssh_thread = threading.Thread(target = self.ssh_main)
@@ -42,6 +44,8 @@ class SSHManager:
 
     # Stops the thread, and the ssh connection
     def stop(self):
+        print(f"SSH: Closing connection to {self.username}@{self.host}:{self.port}")
+
         self.stop_event.set()
         self.ssh_thread.join()
 
@@ -52,26 +56,29 @@ class SSHManager:
 
     # Establishes a new ssh connection, and listens to it
     def ssh_main(self):
-        print(f"SSH: Connecting to {self.username}@{self.host}:{self.port} with password '{self.password}'")
+        print(f"SSH: Connecting to {self.username}@{self.host}:{self.port}")
 
         client = paramiko.SSHClient()
         client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         
+        # Get event loop from socket handler, to enable message sending
+        loop = tornado.ioloop.IOLoop.current()
+        loop.make_current()
+
         try:
             client.connect(self.host, self.port, self.username, self.password)
         except Exception as e:
-            self.socket_handler.sshMessage(self.websocket, "error", str(e))
-            raise SSHError(f"Connection to {self.host} failed, reason: {e}")
+            self.socket_handler.sshError(self.websocket, str(e))
+            #raise SSHError(f"Connection to {self.host} failed, reason: {e}")
+            return
 
         # Open a new terminal
         channel = client.invoke_shell(term = self.terminal, width = 80, height = 25)
-        
-        loop = tornado.ioloop.IOLoop.current()
-        loop.make_current()
+
         self.socket_handler.sshMessage(self.websocket, "info", "SSH Connection successful!")
         self.socket_handler.sshSetting(self.websocket, "has_ssh", True)
 
-        self.input_queue.put("ls")
+        self.input_queue.put("ls\ncd minecraft\nls -lha")
 
         while not self.stop_event.is_set():
             if not self.input_queue.empty():
@@ -157,7 +164,7 @@ class SSHManager:
 
     # Decodes an ansi escape equence into it's base components
     def decodeANSI(self, ansi):
-        if len(ansi) <= 2: return []
+        if len(ansi) <= 2: return [0]
 
         values = [int(n) for n in ansi[1:-1].split(";")]
 

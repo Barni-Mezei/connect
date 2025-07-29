@@ -49,7 +49,11 @@ def main():
     #cli_worker.start()
 
     #Start server
-    tornado.ioloop.IOLoop.instance().start()
+    try:
+        tornado.ioloop.IOLoop.instance().start()
+    except KeyboardInterrupt:
+        SocketHandler.fullStop()
+        tornado.ioloop.IOLoop.instance().stop()
 
     print(Color.paint("\nServer stopped", Color.red))
 
