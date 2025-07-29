@@ -94,7 +94,7 @@ Reason: ${reason}`;
 
 
 ws.onmessage = function (e) {
-    console.log("Message received:", e);
+    //console.log("Message received:", e);
 
     let data = e.data;
 
@@ -123,9 +123,46 @@ ws.onmessage = function (e) {
 
                 console.log("Logged in with", data.id, e);
 
-                terminalColor.innerHTML = `Connecting to <span class="color-fg-bright-black">${data.username}@${data.address}</span>`;
+                terminalColor.innerHTML = `Connecting to <span class="color-fg-bright-black">${data.username}@${data.address}</span>\n`;
                 terminalText.value = "";
             }
+            break;
+
+        case "ssh_message":
+            if (data.category == "error") {
+                //SSH Connection error
+                console.error("SSH Error", data.message);
+
+                terminalColor.innerHTML += `<span class="color-fg-red">SSH Error: ${data.message}</span>\n`;
+                terminalText.value = "";
+
+                terminalColor.contentEditable = false;
+                terminalText.contentEditable = false;
+                terminalText.classList.add("disabled");
+            }
+
+            if (data.category == "info") {
+                //SSH Connection information
+                console.log("SSH Info", data.message);
+
+                terminalColor.innerHTML += `SSH Info: <span class="color-fg-bright-green">${data.message}</span>\n`;
+                terminalText.value = terminalColor.innerText;
+
+                terminalColor.contentEditable = false;
+                terminalText.contentEditable = true;
+                terminalText.classList.remove("disabled");
+            }
+
+            if (data.category == "data") {
+                //SSH Screen data
+                console.log("SSH screen", data.message);
+
+                terminalColor.innerHTML += `${data.message}`;
+                terminalText.value = terminalColor.innerText;
+
+                terminalColor.contentEditable = false;
+            }
+
             break;
 
         default:

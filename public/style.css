@@ -155,7 +155,7 @@ body {
     z-index: 10;
 
     background-color: transparent;
-    color: white;
+    color: transparent;
 
     resize: none;
     outline: none;

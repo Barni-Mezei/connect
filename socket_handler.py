@@ -65,6 +65,19 @@ class SocketHandler(tornado.websocket.WebSocketHandler):
 
 
     """
+    SSH Manager response functions
+    """
+
+    # SSH Connector output
+    def sshMessage(socket, type, message):
+        socket.write_message({"type": "ssh_message", "category": type, "message": message})
+
+    # Sets a user's data from the ssh manager
+    def sshSetting(socket, param, value):
+        userData = SocketHandler.getUserData(socket)
+        userData[param] = value
+
+    """
     Socket handling methods
     """
 
@@ -77,7 +90,7 @@ class SocketHandler(tornado.websocket.WebSocketHandler):
                 print(f"\r{Color.paint(f'Maximum number of clients reached! ({SocketHandler.maxClients})', Color.red)}")
 
             #raise tornado.web.HTTPError(403, "Connection refused.")
-            self.close(reason="Maximum number of clients reached")
+            self.close(reason = "Maximum number of clients reached")
             return
     
         newId = SocketHandler.getUID()
@@ -87,6 +100,7 @@ class SocketHandler(tornado.websocket.WebSocketHandler):
             "socket": self,
             "data": {
                 "id": newId,
+                "has_ssh": False
             }
         })
 
@@ -104,11 +118,20 @@ class SocketHandler(tornado.websocket.WebSocketHandler):
 
         if not "type" in msg: return
 
-        # Somebody executed a command
-        if msg["type"] == "command":
-            if SocketHandler.getUserDataByID(msg["id"]) == None: return
+        # Somebody executed a command or pressed a key
+        if msg["type"] == "control":
+            userData = SocketHandler.getUserDataByID(msg["id"])
+            if userData == None: return
+            if userData["has_ssh"] == False: return
 
-            # TODO terminal
+            if msg["mode"] == "command":
+                # Send command to terminal
+                pass
+
+            if msg["mode"] == "key":
+                # Send key press to terminal
+                pass
+
             return
 
         if msg["type"] == "connect":
@@ -143,6 +166,10 @@ class SocketHandler(tornado.websocket.WebSocketHandler):
             # Get user ID
             userID = SocketHandler.getUserData(self)["id"]
 
+            # Create terminal
+            userTerm = SSHManager(SocketHandler, self, msg["address"], numericPort, msg["username"], msg["password"])
+            userTerm.begin()
+
             # Let the client know, it registered successfully, and send them their ID
             self.write_message({
                 "type": "validate",
@@ -157,6 +184,7 @@ class SocketHandler(tornado.websocket.WebSocketHandler):
                 "id": userID, # Keep the user id
                 "login_time": time(),
                 "has_ssh": False,
+                "term": userTerm,
                 "address": msg["address"],
                 "port": numericPort,
                 "username": msg["username"],
@@ -165,8 +193,6 @@ class SocketHandler(tornado.websocket.WebSocketHandler):
 
             if SocketHandler.logMode == "on":
                 print(f"\rUser '{Color.paint(msg['username'], Color.aqua)}' ({Color.paint(userID, Color.gray)}) connecting to '{Color.paint(msg['address'], Color.gray)}'")
-
-            open
 
             return # Do not brodcast this
 
@@ -182,11 +208,10 @@ class SocketHandler(tornado.websocket.WebSocketHandler):
 
     def on_close(self):
         leavingUserData = SocketHandler.getUserData(self)
+        leavingUserData["term"].stop() # Close ssh terminal and exit the thread
 
         if leavingUserData != None and "id" in leavingUserData and "username" in leavingUserData and "address" in leavingUserData:
             if SocketHandler.logMode != "off": #on / reduced
-                print(f"\rUser '{Color.paint(leavingUserData['username'], Color.aqua)}' \
-({Color.paint(leavingUserData['id'], Color.gray)}) \
-disconnected {Color.paint(f'({len(SocketHandler.clients)}/{SocketHandler.maxClients})', Color.gray)}")
+                print(f"\rUser '{Color.paint(leavingUserData['username'], Color.aqua)}' ({Color.paint(leavingUserData['id'], Color.gray)}) disconnected {Color.paint(f'({len(SocketHandler.clients)}/{SocketHandler.maxClients})', Color.gray)}")
 
         SocketHandler.clients = SocketHandler.removeUser(self)
