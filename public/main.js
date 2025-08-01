@@ -67,16 +67,23 @@ formInputs.forEach(function (f) {
 });
 
 //Synchronises the terminal text to the visual one
-function syncTerminalText() {
+function syncTerminalText(offset = 0) {
     let terminalTextDisplay = document.getElementById("terminal_text_display");
 
     if (!terminalTextDisplay) return;
 
-    let textBeforeCursor = terminalText.value.substring(0, terminalText.selectionStart);
-    let textUnderCursor = terminalText.value[terminalText.selectionStart] ?? " ";
-    let textAfterCursor = terminalText.value.substring(terminalText.selectionStart + 1, terminalText.value.length + 1);
+    let cursorPos = terminalText.selectionStart + offset;
+    cursorPos = Math.min(Math.max(cursorPos, 0), terminalText.value.length);
 
-    terminalTextDisplay.innerHTML = `${textBeforeCursor}<span class="effect-reverse">${textUnderCursor}</span>${textAfterCursor}`;
+    let selectionWidth = terminalText.selectionEnd - cursorPos;
+    if (selectionWidth > terminalText.value.length) selectionWidth = terminalText.value.length - selectionWidth;
+    if (selectionWidth < 1) selectionWidth = 1;
+
+    let textBeforeCursor = terminalText.value.substring(0, cursorPos);
+    let textUnderCursor = terminalText.value.substring(cursorPos, cursorPos + selectionWidth);
+    let textAfterCursor = terminalText.value.substring(cursorPos + selectionWidth, terminalText.value.length + 1);
+
+    terminalTextDisplay.innerHTML = `${textBeforeCursor}<span id="cursor" class="effect-reverse">${textUnderCursor}</span>${textAfterCursor}`;
 }
 
 // on blur, re-grab focus
@@ -91,10 +98,16 @@ terminalText.onfocus = function (e) {
 }
 
 terminalText.onkeydown = function (e) {
-    syncTerminalText();
+    if (e.key == "ArrowLeft") {
+        syncTerminalText(-1);
+    } else if (e.key == "ArrowRight") {
+        syncTerminalText(1);
+    } else {
+        syncTerminalText();
+    }
 
     if (e.ctrlKey || e.altKey) {
-        if (e.key == "Control" || e.key == "Alt") return;
+        if (e.key == "Control" || e.key == "Alt" || e.key == "Shift") return;
 
         sendKey({
             "ctrl": e.ctrlKey,
@@ -115,7 +128,7 @@ terminalText.onkeyup = function (e) {
 }
 
 //Update visual text on typing
-terminalText.onbeforeinput = function (e) {
+terminalText.oninput = function (e) {
     syncTerminalText();
 }
 

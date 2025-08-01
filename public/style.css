@@ -1,8 +1,12 @@
 :root {
     --color-default-fg: white;
     --color-default-bg: black;
-    --color-default-font: monospace;
-    --color-default-font-size: 16px;
+    
+    --default-font: monospace;
+    --default-font-size: 20px;
+    
+    --terminal-font: monospace;
+    --terminal-font-size: 16px;
 }
 
 body {
@@ -11,11 +15,11 @@ body {
 
     margin: 0px;
 
-    background-color: #000000;
-    color: white;
+    background-color: var(--color-default-bg);
+    color: var(--color-default-fg);
 
-    font-family: monospace;
-    font-size: 20px;
+    font-family: var(--color-default-font);
+    font-size: var(--default-font-size);
 }
 
 .hidden {
@@ -53,8 +57,8 @@ body {
 
     background-color: #88888888;
 
-    font-family: monospace;
-    font-size: 20px;
+    font-family: var(--default-font);
+    font-size: var(--default-font-size);
 }
 
 .menu .row {
@@ -117,7 +121,6 @@ body {
 }
 
 .menu #error_message {
-    content: "asd";
     color: #ff0000;
     font-weight: bold;
     margin: auto;
@@ -136,11 +139,11 @@ body {
     padding: 0px;
     padding-bottom: 1em;
 
-    font-family: monospace;
-    font-size: 16px;
+    font-family: var(--terminal-font);
+    font-size: var(--terminal-font-size);
 
-    background-color: black;
-    color: white;
+    background-color: var(--color-default-bg);
+    color: var(--color-default-fg);
 
     border: none;
 
@@ -160,17 +163,18 @@ body {
 }
 
 .terminal::selection, .terminal span::selection {
-    background-color: white;
-    color: black;
+    background-color: var(--color-default-fg);
+    color: var(--color-default-bg);
 }
 
 .terminal span#terminal_text_display {
-    background-color: inherit;
-    color: inherit;
+    background-color: var(--color-default-bg);
+    color: var(--color-default-fg);
 }
 
 .terminal span#terminal_text_display #cursor {
-    filter: invert(1);
+    background-color: inherit;
+    color: inherit;
 }
 
 #terminal_text_input {
@@ -182,8 +186,8 @@ body {
     margin: 0px;
     padding: 0px;
 
-    font-size: 16px;
-    font-family: monospace;
+    font-size: var(--terminal-font);
+    font-family: var(--terminal-font-size);
 
     /*background-color: transparent;
     color: transparent;
@@ -204,7 +208,7 @@ body {
     z-index: 100;
 
     background-color: #88888888;
-    color: white;
+    color: var(--color-default-fg);
 
     border-radius: 10px;
     border: 2px solid #888888;
