@@ -14,61 +14,94 @@
 
     <title>Connect</title>
 </head>
-<body oncontextmenu="contextMenuOpen()">
+<body>
     <main>
         <pre class="terminal" id="terminal_color">Connecting...</pre>
 
-        <div class="menu" id="connect_menu">
-            <div class="row full">
-                <p id="error_message"></p>
-            </div>
-            <div class="row">
-                <label for="ssh_address">Address</label>
-                <input type="text" name="address" id="ssh_address" autocomplete="off">
-            </div>
-            <div class="row">
-                <label for="ssh_port">Port</label>
-                <input type="number" name="port" id="ssh_port" value="22" autocomplete="off">
-            </div>
-            <div class="row">
-                <label for="ssh_username">Username</label>
-                <input type="text" name="username" id="ssh_username" autocomplete="off">
-            </div>
-            <div class="row">
-                <label for="ssh_password">Password</label>
-                <input type="password" name="password" id="ssh_password" autocomplete="off">
-            </div>
-            <div class="row full">
-                <button class="round-bottom fast" id="connect_button">Connect</button>
-            </div>
+        <!-- Navbar -->
+        <div class="nav">
+            <button id="connect_menu_button">C</button>
+            <button id="settings_menu_button">S</button>
         </div>
 
-        <!-- Settings menu -->
-        <button id="settings_button">+</button>
-
-        <div class="menu close" id="settings_menu">
-            <div class="row full">
-                <h1>Settings</h1>
+        <div class="menus">
+            <!-- SSH Connection menu -->
+            <div class="menu close hidden" id="connect_menu">
+                <div class="row full">
+                    <p id="error_message"></p>
+                </div>
+                <div class="row">
+                    <label for="ssh_address">Address</label>
+                    <input type="text" name="address" id="ssh_address" autocomplete="off">
+                </div>
+                <div class="row">
+                    <label for="ssh_port">Port</label>
+                    <input type="number" name="port" id="ssh_port" value="22" autocomplete="off">
+                </div>
+                <div class="row">
+                    <label for="ssh_username">Username</label>
+                    <input type="text" name="username" id="ssh_username" autocomplete="off">
+                </div>
+                <div class="row">
+                    <label for="ssh_password">Password</label>
+                    <input type="password" name="password" id="ssh_password" autocomplete="off">
+                </div>
+                <div class="row">
+                    <label for="ssh_terminal">Terminal</label>
+                    <select name="terminal" id="ssh_terminal" autocomplete="off">
+                        <option value="vt100" selected>vt100</option>
+                        <option value="xterm">XTerm</option>
+                        <option value="xterm-color">XTerm color</option>
+                        <option value="linux">Linux</option>
+                        <option value="linux-mono">Linux (monochrome)</option>
+                        <option value="gnome-terminal">Gnome terminal</option>
+                    </select>
+                </div>
+                <div class="row">
+                    <label for="ssh_chunk_size">Chunk size</label>
+                    <select name="chunk_size" id="ssh_chunk_size" autocomplete="off">
+                        <option value="32">32</option>
+                        <option value="64">64</option>
+                        <option value="256">256</option>
+                        <option value="512">512</option>
+                        <option value="1024" selected>1024</option>
+                        <option value="2048">2048</option>
+                        <option value="4096">4096</option>
+                    </select>
+                </div>
+                <div class="row full">
+                    <button class="round-bottom fast" id="connect_button">Connect</button>
+                </div>
             </div>
-            <div class="row full">
-                <button class="round-top fast" id="settings_button_reload">Reload</button>
+    
+            <!-- Page settings menu -->
+            <div class="menu close hidden" id="settings_menu">
+                <div class="row full">
+                    <h1>Settings</h1>
+                </div>
+                <div class="row full">
+                    <button class="round-top fast" id="settings_button_reload">Reload</button>
+                </div>
+                <div class="row full">
+                    <button class="fast" id="settings_button_clear">Clear</button>
+                </div>
+                <div class="row full">
+                    <button class="fast" id="settings_button_scroll">Scroll to view</button>
+                </div>
+                <div class="row">
+                    <label for="settings_input_theme">Theme</label>
+                    <select class="round-bottom fast" name="theme" id="settings_input_theme" autocomplete="off">
+                        <option value="ubuntu" selected>Ubuntu</option>
+                        <option value="windows">Windows console</option>
+                        <option value="powershell">Powershell</option>
+                    </select>
+                </div>
+                <div class="row">
+                    <label for="settings_input_capture">Capture input</label>
+                    <input type="checkbox" name="capture" id="settings_input_capture" checked autocomplete="off">
+                </div>
             </div>
-            <div class="row full">
-                <button class="fast" id="settings_button_clear">Clear</button>
-            </div>
-            <div class="row">
-                <label for="settings_input_theme">Theme</label>
-                <select class="round-bottom fast" name="theme" id="settings_input_theme" autocomplete="off">
-                    <option value="ubuntu" selected>Ubuntu</option>
-                    <option value="windows">Windows console</option>
-                    <option value="powershell">Powershell</option>
-                </select>
-            </div>
-            <div class="row">
-                <label for="settings_input_capture">Capture input</label>
-                <input type="checkbox" name="capture" id="settings_input_capture" checked autocomplete="off">
-            </div>
-        </div>
+        </div> <!-- Menus end -->
     </main>
 </body>
 </html>

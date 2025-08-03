@@ -140,6 +140,7 @@ class SocketHandler(tornado.websocket.WebSocketHandler):
             userData = SocketHandler.getUserDataByID(msg["id"])
             if userData == None: return
             if userData["has_ssh"] == False: return
+            if userData["id"] != msg["id"]: return # Is this the correct who user sent this
 
             if msg["mode"] == "command":
                 userData["term"].send_command(msg["value"])
@@ -179,28 +180,50 @@ class SocketHandler(tornado.websocket.WebSocketHandler):
                 self.write_message({"type": "validate", "state": "fail", "reason": "Password cannot be empty!"})
                 return
 
+            if len(msg["chunk_size"]) < 3:
+                self.write_message({"type": "validate", "state": "fail", "reason": "Invalid chunk size!"})
+                return
+
+            numericChunkSize = 0
+            try:
+                numericChunkSize = int(msg["chunk_size"])
+            except:
+                self.write_message({"type": "validate", "state": "fail", "reason": "Invalid chunk size!"})
+                return
+
+            if not (32 < numericChunkSize < 65535):
+                self.write_message({"type": "validate", "state": "fail", "reason": "Chunk size out of range!"})
+                return
+
+            # Set default terminal
+            if (not "terminal" in msg): msg["terminal"] = "vt100"
+
             # Get user ID
-            userID = SocketHandler.getUserData(self)["id"]
+            userData = SocketHandler.getUserData(self)
 
             if SocketHandler.logMode == "on":
-                print(f"\rUser '{Color.paint(msg['username'], Color.aqua)}' ({Color.paint(userID, Color.gray)}) connecting to '{Color.paint(msg['address'], Color.gray)}'")
+                print(f"\rUser '{Color.paint(msg['username'], Color.aqua)}' ({Color.paint(userData["id"], Color.gray)}) connecting to '{Color.paint(msg['address'], Color.gray)}'")
 
-            # Create terminal
-            userTerm = SSHManager(SocketHandler, self, msg["address"], numericPort, msg["username"], msg["password"])
+            # Check if an SSH session is already in progress, stop it if so
+            if "has_ssh" in userData and userData["has_ssh"] == True: userData["term"].stop()
+
+            # Create new SSH manager (creates a new thread, and an ssh connection in the background)
+            userTerm = SSHManager(SocketHandler, self, msg["address"], numericPort, msg["username"], msg["password"], msg["terminal"])
             userTerm.begin()
 
             # Let the client know, it registered successfully, and send them their ID
             self.write_message({
                 "type": "validate",
                 "state": "pass",
-                "id": userID,
+                "id": userData["id"],
                 "address": msg["address"],
                 "port": numericPort,
                 "username": msg["username"],
+                "terminal": msg["terminal"],
             })
 
             SocketHandler.setUserData(self, {
-                "id": userID, # Keep the user id
+                "id": userData["id"], # Keep the user id
                 "login_time": time(),
                 "has_ssh": False,
                 "term": userTerm,

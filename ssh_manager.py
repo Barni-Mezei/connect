@@ -4,6 +4,7 @@ import threading
 import queue
 import time
 import re
+import traceback
 
 from color import Color
 
@@ -18,7 +19,8 @@ class SSHManager:
     port = 22
     username = ""
     password = ""
-    terminal = "bash"
+    terminal = "vt100"
+    chunk_size = 1024
 
     output_queue = queue.Queue()
     input_queue = queue.Queue()
@@ -28,7 +30,7 @@ class SSHManager:
     socket_handler = None
     websocket = None
 
-    def __init__(self, socket_handler, websocket, host, port, username, password, terminal = "bash"):
+    def __init__(self, socket_handler, websocket, host, port, username, password, terminal = "vt100", chunk_size = 1024):
         self.socket_handler = socket_handler
         self.websocket = websocket
 
@@ -37,6 +39,7 @@ class SSHManager:
         self.username = username
         self.password = password
         self.terminal = terminal
+        self.chunk_size = chunk_size
 
         self.stop_event = threading.Event()
 
@@ -47,7 +50,7 @@ class SSHManager:
 
     # Stops the thread, and the ssh connection
     def stop(self):
-        print(f"SSH: Closing connection to {self.username}@{self.host}:{self.port}")
+        print(f"SSH: Closing connection to {self.username}@{self.host}:{self.port} ({self.terminal})")
 
         self.stop_event.set()
         self.ssh_thread.join()
@@ -74,7 +77,7 @@ class SSHManager:
 
     # Establishes a new ssh connection, and listens to it
     def ssh_main(self):
-        print(f"SSH: Connecting to {self.username}@{self.host}:{self.port}")
+        print(f"SSH: Connecting to {self.username}@{self.host}:{self.port} ({self.terminal})")
 
         client = paramiko.SSHClient()
         client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
@@ -110,36 +113,91 @@ class SSHManager:
                 shell.send(entry["value"])
 
             if shell.recv_ready():
-                output = shell.recv(4096) # 1024
+                output = shell.recv(self.chunk_size)
 
                 # Parse output
-                parsed_text = self.processDataChunk(output)
+                try:
+                    parsed_text = self.processDataChunk(output)
+                except Exception as e:
+                    print(f"{Color.paint(f'SSH: ERROR: {traceback.format_exc()}', Color.red)}")
+                    self.socket_handler.sshMessage(self.websocket, "error", str(e))
+                    return
 
                 # Output a formatted HTML
                 if len(parsed_text) > 0:
-                    for outputHtml in self.htmlFromParsedText(parsed_text):
-                        self.socket_handler.sshMessage(self.websocket, "data", outputHtml)
-                    #time.sleep(0.01)
+                    try:
+                        for outputHtml in self.htmlFromParsedText(parsed_text):
+                            self.socket_handler.sshMessage(self.websocket, "data", outputHtml)
+                        #time.sleep(0.1)
+                    except Exception as e:
+                        print(f"{Color.paint(f'SSH: ERROR: {traceback.format_exc()}', Color.red)}")
+                        self.socket_handler.sshMessage(self.websocket, "error", str(e))
+                        return
 
     def processDataChunk(self, data):
-        #print("Data", repr(data))
+        data = data + b"\0\0\0\0\0\0\0\0" # Account for stripped control characters (if they are chopped in half)
+
+        print("Data", repr(data))
 
         parsed_text = []
 
         escape = None
+        escape_mode = ""
         text = ""
 
-        for b in data:
+        for i, b in enumerate(data):
             if escape == None:
-                if b == 0x1b:
+                if b == 0x1b: # Escape sequences (like color changing and cursor manipulation)
                     escape = ""
+                    escape_mode = data[i + 1]
                     parsed_text.append({"type": "text", "value": text})
                     text = ""
+
+                    if escape_mode == ord("("): # Assign charset
+                        parsed_text.append({"type": "ansi", "mode": escape_mode, "value": chr(data[i +2])})
+                        escape = None
+
+                    if escape_mode == ord(")"): # Invoke charset
+                        charset_id = ""
+
+                        for j in range(2):
+                            if chr(data[i + j + 2]).isdigit():
+                                charset_id += chr(data[i + j + 2])
+
+                        parsed_text.append({"type": "ansi", "mode": escape_mode, "value": int(charset_id)})
+                        escape = None
+
+                    if escape_mode in [ord("="), ord(">")]: # Application keypad mode (on / off)
+                        parsed_text.append({"type": "ansi", "mode": escape_mode, "value": ""})
+                        escape = None
+
+                    continue
+
+                if b == 0x0f: # (shift in) Charset to G0
+                    continue
+
+                if b == 0x0e: # (shift out) Charset to G1
                     continue
             else:
                 escape += chr(b)
-                if b in [ord("m"), ord("h"), ord("l"), ord("J"), ord("H"), ord("]")]: # Ansi escape sequences can be closed with: "m" "h" "l" "J" "H" "]"
-                    parsed_text.append({"type": "ansi", "value": escape})
+                # Regular ansi escape sequences can be closed with the following characters (basically all non-number characters)
+                if chr(b).lower().isalpha():
+                    """ in [
+                    ord("m"), # Change color
+                    ord("h"),
+                    ord("l"),
+                    ord("r"),
+                    ord("f"), # Same as H
+                    ord("A"), # Move cursor UP 
+                    ord("B"), # MOve cursor DOWN
+                    ord("C"), # Move cursor RIGHT
+                    ord("D"), # Move cursor LEFT
+                    ord("H"), # Move cursor HOME
+                    ord("J"), # Move cursor to pos
+                    ord("K"),
+                    ord("]")
+                ]"""
+                    parsed_text.append({"type": "ansi", "mode": escape_mode, "value": escape})
                     escape = None
                     continue
 
@@ -162,16 +220,19 @@ class SSHManager:
 
         return parsed_text
 
-    # Decodes an ansi escape equence from characters into a real one
-    def decodeANSIChars(self, ansi):
-        if len(ansi) <= 2: return "\033[m"
+    def parseOptionalXYParams(self, full_ansi, ansi_core):
+        x = 1
+        y = 1
 
-        values = ansi[1:-1].split(";")
+        if ansi_core != "":
+            if ";" in ansi_core: # Could be [x;yr OR [;yr
+                x, y = [int(1 if n == "" else n) for n in full_ansi[1:-1].split(";")]
+            else: # Could be [xr
+                return int(ansi_core), 1
+        
+        return x, y
 
-        return f"\033[{';'.join(values)}m"
-
-    # Decodes an ansi escape equence into it's base components (returns a list or a string, if it is a special sequence, like clear)
-    def decodeANSI(self, ansi):
+    def _decodeANSI_91(self, ansi):
         ansi_type = ansi[-1]
         core = ansi[1:-1]
         first_char = core[0] if len(core) > 0 else "0"
@@ -194,20 +255,23 @@ class SSHManager:
                 # Device control disable
                 return {"type": "dc_disable", "value": int(core[1::])}
 
+            case "r":
+                # Set scroll region
+                x, y = self.parseOptionalXYParams(ansi, core)
+                
+                return {"type": "cursor", "x": x, "y": y}
+
             case "J":
-                # Screen control
+                # Clear screen from cursor, to cursor, all
                 return {"type": "screen", "value": int(first_char)}
+
+            case "K":
+                # Clear line from cursor, to cursor, all
+                return {"type": "line", "value": int(first_char)}
 
             case "H":
                 # Set cursor position
-                x = 1
-                y = 1
-
-                if core != "":
-                    if ";" in core: # Could be [x;yH OR [;yH
-                        x, y = [int(1 if n == "" else n) for n in ansi[1:-1].split(";")]
-                    else: # Could be [xH
-                        x, y = int(core), 1
+                x, y = self.parseOptionalXYParams(ansi, core)
                 
                 return {"type": "cursor", "x": x, "y": y}
 
@@ -215,7 +279,39 @@ class SSHManager:
                 # Operating system commands
                 return {"type": "os", "value": core}
 
+            case _: pass
+
         return {"type": "unknown", "value": None}
+
+    def _decodeANSI_40(self, ansi):
+        #print("ANSI", repr(ansi), end=" | ")
+
+        return {"type": "set_charset", "value": ord(ansi)}
+
+
+    def _decodeANSI_41(self, ansi):
+        #print("ANSI", repr(ansi), end=" | ")
+
+        return {"type": "invoke_charset", "value": int(ansi)}
+
+    def _decodeANSI_61(self, ansi):
+        #print("ANSI", repr(ansi), end=" | ")
+
+        return {"type": "keypad_mode", "value": True}
+
+    def _decodeANSI_62(self, ansi):
+        #print("ANSI", repr(ansi), end=" | ")
+
+        return {"type": "keypad_mode", "value": False}
+
+    # Decodes an ansi escape equence into it's base components (returns a list or a string, if it is a special sequence, like clear)
+    def decodeANSI(self, ansi, mode):
+        if mode == ord("["): return self._decodeANSI_91(ansi)
+        if mode == ord("("): return self._decodeANSI_40(ansi)
+        if mode == ord(")"): return self._decodeANSI_41(ansi)
+        if mode == ord("="): return self._decodeANSI_61(ansi)
+        if mode == ord(">"): return self._decodeANSI_62(ansi)
+
 
     # Returnsd with the name of the class, with the color, corresponding with the ansi color code
     def getColorByIndex(self, colorIndex, background = False, bright = False):
@@ -319,13 +415,13 @@ class SSHManager:
         return ("" if isFirstSpan else "</span>") + f"<span class=\"{' '.join(classes)}\">"
 
     def htmlFromParsedText(self, parsed_text):
-        out = ""#"<span class=\"start\">"
+        out = ""
         ansi_flags = {}
         first_span = True
 
         for l in parsed_text:
             if l["type"] == "ansi":
-                decoded_ansi = self.decodeANSI(l["value"])
+                decoded_ansi = self.decodeANSI(l["value"], l["mode"])
 
                 #print(decoded_ansi)
 

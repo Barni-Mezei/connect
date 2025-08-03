@@ -30,8 +30,39 @@ body {
     display: none !important;
 }
 
-.menu {
+/* Main menu container */
+.menus {
     position: fixed;
+    display: flex;
+
+    flex-flow: row wrap;
+    justify-content: center;
+    gap: 20px;
+
+    top: 50%;
+    left: 50%;
+
+    transform: translate(-50%, -50%);
+
+    max-width: 1200px;
+    max-height: 1000px;
+
+    min-width: 500px;
+
+    width: min-content;
+
+    margin: 0px;
+    padding: 10px;
+
+    font-family: var(--default-font);
+    font-size: var(--default-font-size);
+
+    overflow: hidden;
+}
+
+/* General menu styling */
+.menu {
+    position: relative;
     display: flex;
 
     flex-flow: column nowrap;
@@ -39,25 +70,18 @@ body {
     justify-content: space-between;
     gap: 5px;
 
-    top: 50%;
-    left: 50%;
-
-    transform: translate(-50%, -50%);
-
-    width: 25vw;
-    height: 25vh;
+    width: 100%;
+    height: 100%;
 
     max-width: 500px;
     max-height: 500px;
 
-    min-width: 200px;
+    min-width: 250px;
 
     margin: 0px;
-    padding: 10px;
+    padding: 15px;
 
     border-radius: 10px;
-
-    z-index: 20;
 
     background-color: var(--color-default-menu-bg);
 
@@ -65,6 +89,34 @@ body {
 
     font-family: var(--default-font);
     font-size: var(--default-font-size);
+}
+
+.menu.open {
+    animation: menu-open var(--menu-anim-speed) ease-out backwards;
+}
+
+.menu.close {
+    animation: menu-close var(--menu-anim-speed) ease-in backwards;
+}
+
+@keyframes menu-open {
+    0% {
+        opacity: 0;
+    }
+
+    100% {
+        opacity: 1;
+    }
+}
+
+@keyframes menu-close {
+    0% {
+        opacity: 1;
+    }
+    
+    100% {
+        opacity: 0;
+    }
 }
 
 .menu .row {
@@ -162,6 +214,52 @@ body {
     margin: auto;
 }
 
+/* Menu buttons */
+.nav {
+    position: fixed;
+    display: flex;
+
+    flex-flow: row nowrap;
+    justify-content: center;
+    align-items: center;
+    gap: 5px;
+
+    top: 5px;
+    right: 5px;
+
+    margin: 0px;
+    padding: 0px;
+
+    z-index: 30;
+}
+
+.nav button {
+    aspect-ratio: 1;
+
+    margin: 0px;
+    padding: 10px;
+
+    width: 50px;
+    height: 50px;
+
+    background-color: var(--color-default-menu-bg);
+    color: var(--color-default-fg);
+
+    border: 3px solid var(--color-default-menu-border);
+    border-radius: 5px;
+}
+
+.nav button:hover {
+    filter: brightness(1.1);
+}
+
+.nav button:active {
+    filter: brightness(1.2);
+}
+
+
+
+
 /* Terminal styling */
 .terminal {
     position: fixed;
@@ -186,8 +284,8 @@ body {
 
     z-index: 0;
 
-    white-space: pre-wrap;
-    word-wrap: break-word;
+    white-space: pre;
+    word-wrap: normal;
 
     overflow-y: scroll;
     /*overflow-x: auto;*/
@@ -206,68 +304,3 @@ body {
     color: var(--color-default-bg);
 }
 
-/* Settings menu button */
-#settings_button {
-    position: fixed;
-    display: block;
-
-    aspect-ratio: 1;
-
-    top: 5px;
-    right: 5px;
-
-    margin: 0px;
-    padding: 10px;
-
-    width: 50px;
-    height: 50px;
-
-    z-index: 30;
-
-    background-color: var(--color-default-menu-bg);
-    color: var(--color-default-fg);
-
-    border: 3px solid var(--color-default-menu-border);
-    border-radius: 5px;
-}
-
-#settings_button:hover {
-    filter: brightness(1.1);
-}
-
-#settings_button:active {
-    filter: brightness(1.2);
-}
-
-/* Settings menu */
-#settings_menu {
-    z-index: 30;
-}
-
-#settings_menu.open {
-    animation: menu-open var(--menu-anim-speed) ease-out backwards;
-}
-
-#settings_menu.close {
-    animation: menu-close var(--menu-anim-speed) ease-in backwards;
-}
-
-@keyframes menu-open {
-    0% {
-        opacity: 0;
-    }
-
-    100% {
-        opacity: 1;
-    }
-}
-
-@keyframes menu-close {
-    0% {
-        opacity: 1;
-    }
-    
-    100% {
-        opacity: 0;
-    }
-}
