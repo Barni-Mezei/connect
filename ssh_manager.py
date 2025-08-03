@@ -3,6 +3,7 @@ import paramiko # type: ignore
 import threading
 import queue
 import time
+import re
 
 from color import Color
 
@@ -17,7 +18,7 @@ class SSHManager:
     port = 22
     username = ""
     password = ""
-    terminal = "tty"
+    terminal = "bash"
 
     output_queue = queue.Queue()
     input_queue = queue.Queue()
@@ -27,7 +28,7 @@ class SSHManager:
     socket_handler = None
     websocket = None
 
-    def __init__(self, socket_handler, websocket, host, port, username, password, terminal = "tty"):
+    def __init__(self, socket_handler, websocket, host, port, username, password, terminal = "bash"):
         self.socket_handler = socket_handler
         self.websocket = websocket
 
@@ -59,11 +60,15 @@ class SSHManager:
 
     # Sends raw data to the connected ssh
     def send_raw(self, data):
-        char = "Control" if ord(data) < 32 else "Alt"
-        char += " + "
-        char += chr(ord(data) + 96).upper() if ord(data) < 32 else data
+        #char = "-"
 
-        print(f"SSH: Raw received on {self.username}@{self.host}:{self.port} {Color.paint(f'{repr(data)} ({char})', Color.aqua)} ")
+        #try:
+        #    char = "Control" if ord(data) < 32 else "Alt"
+        #    char += " + "
+        #    char += chr(ord(data) + 96).upper() if ord(data) < 32 else data
+        #except: pass
+
+        #print(f"SSH: Raw received on {self.username}@{self.host}:{self.port} {Color.paint(f'{repr(data)} ({char})', Color.aqua)} ")
 
         self.input_queue.put({"type": "data", "value": data})
 
@@ -105,32 +110,20 @@ class SSHManager:
                 shell.send(entry["value"])
 
             if shell.recv_ready():
-                output = shell.recv(1024)
-                #if output:
-                #    self.output_queue.put(output)
-
-                #Print the output
-                #while not self.output_queue.empty():
-                #    data = self.output_queue.get()
-                    #fout.write(data)
-                    #print(data)
+                output = shell.recv(4096) # 1024
 
                 # Parse output
                 parsed_text = self.processDataChunk(output)
 
                 # Output a formatted HTML
                 if len(parsed_text) > 0:
-                    outputHtml = self.htmlFromParsedText(parsed_text)
-                    self.socket_handler.sshMessage(self.websocket, "data", outputHtml)
+                    for outputHtml in self.htmlFromParsedText(parsed_text):
+                        self.socket_handler.sshMessage(self.websocket, "data", outputHtml)
                     #time.sleep(0.01)
 
-
-    def getHtmlChunk(self):
-        if self.output_queue.empty(): return ""
-
-        return self.output_queue.get()
-
     def processDataChunk(self, data):
+        #print("Data", repr(data))
+
         parsed_text = []
 
         escape = None
@@ -143,11 +136,9 @@ class SSHManager:
                     parsed_text.append({"type": "text", "value": text})
                     text = ""
                     continue
-
-
             else:
                 escape += chr(b)
-                if b == 0x6d:
+                if b in [ord("m"), ord("h"), ord("l"), ord("J"), ord("H"), ord("]")]: # Ansi escape sequences can be closed with: "m" "h" "l" "J" "H" "]"
                     parsed_text.append({"type": "ansi", "value": escape})
                     escape = None
                     continue
@@ -179,16 +170,54 @@ class SSHManager:
 
         return f"\033[{';'.join(values)}m"
 
-    # Decodes an ansi escape equence into it's base components
+    # Decodes an ansi escape equence into it's base components (returns a list or a string, if it is a special sequence, like clear)
     def decodeANSI(self, ansi):
-        #print("ANSI", repr(ansi))
+        ansi_type = ansi[-1]
+        core = ansi[1:-1]
+        first_char = core[0] if len(core) > 0 else "0"
 
-        if len(ansi) <= 2: return [0]
+        #print("ANSI", repr(ansi), "Core", repr(core), "End", repr(ansi_type), "First char", repr(first_char), end=" | ")
 
-        values = [int(n) for n in ansi[1:-1].split(";")]
+        match ansi_type:
+            case "m":
+                # Graphics manipulation
+                if core == "":
+                    return {"type": "graphics", "value": [0]}
+                else:
+                    return {"type": "graphics", "value": [int(n) for n in ansi[1:-1].split(";")]}
 
-        return values
+            case "h":
+                # Device control enable
+                return {"type": "dc_enable", "value": int(core[1::])}
 
+            case "l":
+                # Device control disable
+                return {"type": "dc_disable", "value": int(core[1::])}
+
+            case "J":
+                # Screen control
+                return {"type": "screen", "value": int(first_char)}
+
+            case "H":
+                # Set cursor position
+                x = 1
+                y = 1
+
+                if core != "":
+                    if ";" in core: # Could be [x;yH OR [;yH
+                        x, y = [int(1 if n == "" else n) for n in ansi[1:-1].split(";")]
+                    else: # Could be [xH
+                        x, y = int(core), 1
+                
+                return {"type": "cursor", "x": x, "y": y}
+
+            case "]":
+                # Operating system commands
+                return {"type": "os", "value": core}
+
+        return {"type": "unknown", "value": None}
+
+    # Returnsd with the name of the class, with the color, corresponding with the ansi color code
     def getColorByIndex(self, colorIndex, background = False, bright = False):
         if colorIndex == -1: return "black" if background else "bright-white"
 
@@ -205,6 +234,7 @@ class SSHManager:
 
         return ("bright-" if bright else "") + colors[colorIndex]
 
+    # Creates a dictionary, from the ansi escape codes
     def setFlags(self, oldFlags : dict, newFlags : list):
         default = {
             "intensity": "normal",
@@ -295,15 +325,42 @@ class SSHManager:
 
         for l in parsed_text:
             if l["type"] == "ansi":
-                ansi_flags = self.setFlags(ansi_flags, self.decodeANSI(l["value"]))
+                decoded_ansi = self.decodeANSI(l["value"])
 
-                out += self.createSpanFromAnsi(ansi_flags, first_span)
-                first_span = False
+                #print(decoded_ansi)
 
+                match decoded_ansi["type"]:
+                    case "unknown": pass
+
+                    # Screen control (like clearing)
+                    case "screen":
+                        out = ""
+                        first_span = True
+
+                        # Send a control message to the page, to clear the screen
+                        yield {"type": "control", "value": "clear", "mode": decoded_ansi["value"]}
+
+                    # Moves the cursor to the top left of the screen
+                    case "cursor":
+                        out = ""
+                        first_span = True
+
+                        # Send a control message to the page, to clear the screen
+                        yield {"type": "control", "value": "cursor", "x": decoded_ansi["x"], "y": decoded_ansi["y"]}
+
+                    # Color and text style manipulation
+                    case "graphics":
+                        ansi_flags = self.setFlags(ansi_flags, decoded_ansi["value"])
+
+                        out += self.createSpanFromAnsi(ansi_flags, first_span)
+                        first_span = False
+
+                    case _: pass
+            
                 continue
 
             out += l["value"]
-        
+
         out += "</span>"
 
-        return out
+        yield {"type": "html", "value": out}

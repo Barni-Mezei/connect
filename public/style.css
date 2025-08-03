@@ -177,32 +177,6 @@ body {
     color: inherit;
 }
 
-#terminal_text_input {
-    position: fixed;
-
-    top: 0px;
-    left: 0px;
-
-    margin: 0px;
-    padding: 0px;
-
-    font-size: var(--terminal-font);
-    font-family: var(--terminal-font-size);
-
-    /*background-color: transparent;
-    color: transparent;
-    border: none;
-    outline: none;
-
-    pointer-events: none;
-    user-select: none;*/
-}
-
-#terminal_text_input::selection {
-    background-color: transparent;
-    color: transparent;
-}
-
 /* Right-click menu */
 .contextmenu {
     z-index: 100;

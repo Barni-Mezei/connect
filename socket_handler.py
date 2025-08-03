@@ -146,12 +146,7 @@ class SocketHandler(tornado.websocket.WebSocketHandler):
                 return
 
             if msg["mode"] == "key":
-                # Send key press to terminal
-                if msg["modifiers"]["ctrl"]:
-                    userData["term"].send_raw(chr(ord(msg['value']) - 96))
-
-                if msg["modifiers"]["alt"]:
-                    userData["term"].send_raw("\x1b" + msg['value'].lower())
+                userData["term"].send_raw(msg['value'])
 
             return
 

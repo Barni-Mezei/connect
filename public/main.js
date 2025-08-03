@@ -1,29 +1,31 @@
 let errorMessage = document.getElementById("error_message");
 let connnectButton = document.getElementById("connect_button");
 let connnectMenu = document.getElementById("connect_menu");
-let terminalText = document.getElementById("terminal_text_input");
 let terminalColor = document.getElementById("terminal_color");
 let colorTheme = document.getElementById("color_theme");
 let contextMenu = document.getElementById("context_menu");
 
-//Start by disabling editing on the page, until the connection is made
-terminalColor.contentEditable = false;
-terminalText.disabled = true;
+let captureAll = true;
+let hasSsh = false;
 
-//Hide context menu
+// Disable editing to the terminal
+terminalColor.contentEditable = false;
+
+// Hide context menu
 contextMenu.classList.add("hidden");
 
 function changeTheme(fileName = "ubuntu") {
     colorTheme.href = `public/colors/${fileName}.css`
 }
 
-//Alias
+// Alias to change theme
 let setTheme = changeTheme;
 
 function getThemes() {
     console.log("ubuntu", "windows");
 }
 
+// Custom right click menu
 function contextMenuOpen() {
     contextMenu.classList.remove("hidden");
 }
@@ -66,70 +68,128 @@ formInputs.forEach(function (f) {
     }
 });
 
-//Synchronises the terminal text to the visual one
-function syncTerminalText(offset = 0) {
-    let terminalTextDisplay = document.getElementById("terminal_text_display");
+// Send every keypres to the server
+window.onkeydown = function (e) {
+    if (!hasSsh) return;
 
-    if (!terminalTextDisplay) return;
+    //console.log(e);
 
-    let cursorPos = terminalText.selectionStart + offset;
-    cursorPos = Math.min(Math.max(cursorPos, 0), terminalText.value.length);
-
-    let selectionWidth = terminalText.selectionEnd - cursorPos;
-    if (selectionWidth > terminalText.value.length) selectionWidth = terminalText.value.length - selectionWidth;
-    if (selectionWidth < 1) selectionWidth = 1;
-
-    let textBeforeCursor = terminalText.value.substring(0, cursorPos);
-    let textUnderCursor = terminalText.value.substring(cursorPos, cursorPos + selectionWidth);
-    let textAfterCursor = terminalText.value.substring(cursorPos + selectionWidth, terminalText.value.length + 1);
-
-    terminalTextDisplay.innerHTML = `${textBeforeCursor}<span id="cursor" class="effect-reverse">${textUnderCursor}</span>${textAfterCursor}`;
-}
-
-// on blur, re-grab focus
-terminalText.onblur = function (e) {
-    terminalText.focus();
-}
-
-terminalText.onfocus = function (e) {
-    terminalText.selectionStart = terminalText.value.length;
-    terminalText.selectionEnd = terminalText.value.length;
-    syncTerminalText();
-}
-
-terminalText.onkeydown = function (e) {
-    if (e.key == "ArrowLeft") {
-        syncTerminalText(-1);
-    } else if (e.key == "ArrowRight") {
-        syncTerminalText(1);
-    } else {
-        syncTerminalText();
+    // Do not enable F key functions, capture them instead
+    if (captureAll) {
+        e.preventDefault();
     }
 
-    if (e.ctrlKey || e.altKey) {
-        if (e.key == "Control" || e.key == "Alt" || e.key == "Shift") return;
+    // Do not send "shift pressed" events
+    if (e.key == "Control" || e.key == "Alt" || e.key == "Shift") return;
 
-        sendKey({
-            "ctrl": e.ctrlKey,
-            "alt": e.altKey,
-        }, e.key);
+    let codeOut = "";
 
-        return;
+    if (e.ctrlKey) {
+        let charCode = e.charCode || e.which || e.keyCode;
+    
+        if (charCode >= 65 && charCode <= 90) { // From A to Z (uppercase)
+            codeOut = String.fromCharCode(charCode - 64);
+        } else if (charCode === 32) {
+            codeOut = "\x00";
+        }
     }
 
-    if (e.key == "Enter") {
-        sendCommand(terminalText.value);
-        terminalText.value = "";
+    // Special keys
+    if (e.key.length > 1) {
+        // Replace special keys, do not send event if key was not found
+        switch (e.key) {
+            case "Backspace":
+                codeOut = "\b";
+                break;
+
+            case "Delete":
+                codeOut = "\x7F";
+                break;
+
+            case "Tab":
+                codeOut = "\t";
+                break;
+
+            case "Enter":
+                codeOut = "\n";
+                break;
+
+            //Arrow keys
+            case "ArrowUp":
+                codeOut = "\x1b[A";
+                break;
+
+            case "ArrowDown":
+                codeOut = "\x1b[B";
+                break;
+
+            case "ArrowRight":
+                codeOut = "\x1b[C";
+                break;
+
+            case "ArrowLeft":
+                codeOut = "\x1b[D";
+                break;
+
+            //Function keys
+            case "F1":
+                codeOut = "\x1b[11";
+                break;
+                
+            case "F2":
+                codeOut = "\x1b[12";
+                break;
+                
+            case "F3":
+                codeOut = "\x1b[13";
+                break;
+                
+            case "F4":
+                codeOut = "\x1b[14";
+                break;
+                
+            case "F5":
+                codeOut = "\x1b[15";
+                break;
+                
+            case "F6":
+                codeOut = "\x1b[17";
+                break;
+                
+            case "F7":
+                codeOut = "\x1b[18";
+                break;
+                
+            case "F8":
+                codeOut = "\x1b[19";
+                break;
+                
+            case "F9":
+                codeOut = "\x1b[20";
+                break;
+                
+            case "F10":
+                codeOut = "\x1b[21";
+                break;
+                
+            case "F11":
+                codeOut = "\x1b[23";
+                break;
+                
+            case "F12":
+                codeOut = "\x1b[24";
+                break;
+
+            // Do not send key, it it is special, but not recognised
+            default:
+                return;
+        }
+    } else if (codeOut == "") { // No special char was pressed
+        // Regular letters
+        codeOut = e.key;
     }
-}
-
-terminalText.onkeyup = function (e) {
-    syncTerminalText();
-}
-
-//Update visual text on typing
-terminalText.oninput = function (e) {
-    syncTerminalText();
+    
+    sendKey(codeOut);
 }
 
 //Create websocket
@@ -148,12 +208,11 @@ function sendCommand(command) {
     ws.send(JSON.stringify(data));
 }
 
-function sendKey(modifiers, key) {
+function sendKey(key) {
     let data = {
         "id": sessionStorage.getItem("id"),
         "type": "control",
         "mode": "key",
-        "modifiers": modifiers,
         "value": key,
     }
 
@@ -196,11 +255,10 @@ ws.onopen = function (e) {
 <span class="effect-striketrough">Striketrough</span> \
 <span class="effect-reverse color-bg-black">Reverse</span>
 
-<span class="effect-slow-blink">Slow</span> \
+Blink <span class="effect-slow-blink">Slow</span> \
 <span class="effect-fast-blink">Fast</span>
 
 `;
-    terminalText.value = "";
 };
 
 //Show closing message
@@ -212,10 +270,8 @@ ws.onclose = function (e) {
 
     terminalColor.innerHTML = `<span class="color-fg-red">Websocket connection closed!</span>
 Reason: ${reason}`;
-    terminalText.value = "";
-
     terminalColor.contentEditable = false;
-    terminalText.disabled = true;
+    hasSsh = false;
 };
 
 
@@ -251,7 +307,6 @@ ws.onmessage = function (e) {
                 console.log("Logged in with", data.id, e);
 
                 terminalColor.innerHTML = `Connecting to <span class="color-fg-bright-black">${data.username}@${data.address}</span>\n`;
-                terminalText.value = "";
             }
             break;
 
@@ -261,10 +316,8 @@ ws.onmessage = function (e) {
                 console.error("SSH Error", data.message);
 
                 terminalColor.innerHTML += `<span class="color-fg-red">SSH Error: ${data.message}</span>\n`;
-                terminalText.value = "";
 
-                terminalColor.contentEditable = false;
-                terminalText.disabled = true;
+                hasSsh = false;
             }
 
             if (data.category == "info") {
@@ -272,26 +325,37 @@ ws.onmessage = function (e) {
                 //console.log("SSH Info", data.message);
 
                 terminalColor.innerHTML += `SSH Info: <span class="color-fg-bright-green">${data.message}</span>\n`;
-                terminalText.value = "Hello, world!";
 
-                terminalColor.contentEditable = false;
-                terminalText.disabled = true;
+                hasSsh = true;
             }
 
             if (data.category == "data") {
-                //SSH Screen data
-                //console.log("SSH screen", data.message);
+                //SSH text data or screen control
+                //console.log("SSH message", data.message, `'${data.message}'`);
 
-                //Remove previous text display
-                document.getElementById("terminal_text_display")?.remove();
+                switch (data.message.type) {
+                    // New text content
+                    case "html":
+                        console.log(data.message.value);
+                        terminalColor.innerHTML += `${data.message.value}`;
+                        break;
 
-                terminalColor.innerHTML += `${data.message}<span id="terminal_text_display"></span>`;
+                    // Screen control commands
+                    case "control":
+                        switch (data.message.value) {
+                            case "clear": // Clears the screen
+                                terminalColor.innerHTML = `<span class="color-fg-bright-black">Cleared with mode: ${data.message.mode}</span>\n`;
+                                break;
+
+                            case "cursor": // Sets the cursor position
+                                terminalColor.innerHTML += `<span class="color-fg-bright-black">Cursor pos X: ${data.message.x} Y: ${data.message.y}</span>\n`;
+                                break;
+                        }
+
+                    break;
+                }
+
                 terminalColor.scrollTop = terminalColor.scrollHeight;
-
-                terminalColor.contentEditable = false;
-                terminalText.disabled = false;
-                terminalText.focus();
-                syncTerminalText();
             }
 
             break;

@@ -6,8 +6,6 @@ import tornado.httpserver
 import tornado.ioloop
 import tornado.web
 
-import signal
-
 #Import other files
 from color import Color
 from socket_handler import SocketHandler
@@ -49,7 +47,7 @@ def main():
         SocketHandler.fullStop()
         tornado.ioloop.IOLoop.instance().stop()
 
-    # '\b\b' to remove '^C'
+    # '\b\b' to remove '^C' when exited, via Ctrl + C
     print(Color.paint("\b\bServer stopped", Color.red))
 
 if __name__ == '__main__':
