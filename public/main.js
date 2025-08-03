@@ -427,7 +427,7 @@ ws.onmessage = function (e) {
 
             if (data.category == "data") {
                 //SSH text data or screen control
-                console.log("SSH message", data.message);
+                //console.log("SSH message", data.message);
 
                 switch (data.message.type) {
                     // New text content

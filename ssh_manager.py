@@ -15,6 +15,13 @@ class SSHError(Exception):
 
 class SSHManager:
     thread = None
+    socket_handler = None
+    websocket = None
+
+    output_queue = queue.Queue()
+    input_queue = queue.Queue()
+    stop_event = threading.Event()
+
     host = ""
     port = 22
     username = ""
@@ -22,14 +29,14 @@ class SSHManager:
     terminal = "vt100"
     chunk_size = 1024
 
-    output_queue = queue.Queue()
-    input_queue = queue.Queue()
-    stop_event = threading.Event()
+    # 0: No logs at all
+    # 1: Only connection specific logging
+    # 2: Basic debug
+    # 3: Advanced debug
+    log_level = 1 
+
     ssh_thread = None
-
-    socket_handler = None
-    websocket = None
-
+    
     def __init__(self, socket_handler, websocket, host, port, username, password, terminal = "vt100", chunk_size = 1024):
         self.socket_handler = socket_handler
         self.websocket = websocket
@@ -50,14 +57,14 @@ class SSHManager:
 
     # Stops the thread, and the ssh connection
     def stop(self):
-        print(f"SSH: Closing connection to {self.username}@{self.host}:{self.port} ({self.terminal})")
+        if self.log_level > 0: print(f"SSH: Closing connection to {self.username}@{self.host}:{self.port} ({self.terminal})")
 
         self.stop_event.set()
         self.ssh_thread.join()
 
     # Sends a command to the connected ssh
     def send_command(self, command):
-        print(f"SSH: Command received on {self.username}@{self.host}:{self.port} $ {Color.paint(f'{command}', Color.aqua)}")
+        if self.log_level > 1: print(f"SSH: Command received on {self.username}@{self.host}:{self.port} $ {Color.paint(f'{command}', Color.aqua)}")
 
         self.input_queue.put({"type": "command", "value": command})
 
@@ -77,7 +84,7 @@ class SSHManager:
 
     # Establishes a new ssh connection, and listens to it
     def ssh_main(self):
-        print(f"SSH: Connecting to {self.username}@{self.host}:{self.port} ({self.terminal})")
+        if self.log_level > 0: print(f"SSH: Connecting to {self.username}@{self.host}:{self.port} ({self.terminal})")
 
         client = paramiko.SSHClient()
         client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
@@ -119,7 +126,7 @@ class SSHManager:
                 try:
                     parsed_text = self.processDataChunk(output)
                 except Exception as e:
-                    print(f"{Color.paint(f'SSH: ERROR: {traceback.format_exc()}', Color.red)}")
+                    if self.log_level > 0: print(f"{Color.paint(f'SSH ERROR [{self.username}@{self.host}:{self.port} ({self.terminal})]:\n{traceback.format_exc()}', Color.red)}")
                     self.socket_handler.sshMessage(self.websocket, "error", str(e))
                     return
 
@@ -130,14 +137,14 @@ class SSHManager:
                             self.socket_handler.sshMessage(self.websocket, "data", outputHtml)
                         #time.sleep(0.1)
                     except Exception as e:
-                        print(f"{Color.paint(f'SSH: ERROR: {traceback.format_exc()}', Color.red)}")
+                        if self.log_level > 0: print(f"{Color.paint(f'SSH ERROR [{self.username}@{self.host}:{self.port} ({self.terminal})]:\n{traceback.format_exc()}', Color.red)}")
                         self.socket_handler.sshMessage(self.websocket, "error", str(e))
                         return
 
     def processDataChunk(self, data):
         data = data + b"\0\0\0\0\0\0\0\0" # Account for stripped control characters (if they are chopped in half)
 
-        print("Data", repr(data))
+        if self.log_level > 2: print("Data", repr(data))
 
         parsed_text = []
 
@@ -237,7 +244,7 @@ class SSHManager:
         core = ansi[1:-1]
         first_char = core[0] if len(core) > 0 else "0"
 
-        #print("ANSI", repr(ansi), "Core", repr(core), "End", repr(ansi_type), "First char", repr(first_char), end=" | ")
+        if self.log_level > 1: print("ANSI", repr(ansi), "Core", repr(core), "End", repr(ansi_type), "First char", repr(first_char), end=" | ")
 
         match ansi_type:
             case "m":
@@ -284,23 +291,23 @@ class SSHManager:
         return {"type": "unknown", "value": None}
 
     def _decodeANSI_40(self, ansi):
-        #print("ANSI", repr(ansi), end=" | ")
+        if self.log_level > 1: print("ANSI", repr(ansi), end=" | ")
 
         return {"type": "set_charset", "value": ord(ansi)}
 
 
     def _decodeANSI_41(self, ansi):
-        #print("ANSI", repr(ansi), end=" | ")
+        if self.log_level > 1: print("ANSI", repr(ansi), end=" | ")
 
         return {"type": "invoke_charset", "value": int(ansi)}
 
     def _decodeANSI_61(self, ansi):
-        #print("ANSI", repr(ansi), end=" | ")
+        if self.log_level > 1: print("ANSI", repr(ansi), end=" | ")
 
         return {"type": "keypad_mode", "value": True}
 
     def _decodeANSI_62(self, ansi):
-        #print("ANSI", repr(ansi), end=" | ")
+        if self.log_level > 1: print("ANSI", repr(ansi), end=" | ")
 
         return {"type": "keypad_mode", "value": False}
 
@@ -423,7 +430,7 @@ class SSHManager:
             if l["type"] == "ansi":
                 decoded_ansi = self.decodeANSI(l["value"], l["mode"])
 
-                #print(decoded_ansi)
+                if self.log_level > 2: print(decoded_ansi)
 
                 match decoded_ansi["type"]:
                     case "unknown": pass
