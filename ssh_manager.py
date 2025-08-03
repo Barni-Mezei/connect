@@ -361,6 +361,7 @@ class SSHManager:
 
             out += l["value"]
 
-        out += "</span>"
+        # Close span if there is any
+        if not first_span: out += "</span>"
 
         yield {"type": "html", "value": out}

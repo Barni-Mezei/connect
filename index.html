@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     
     <!-- Font awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!--<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">-->
 
     <link rel="stylesheet" href="public/style.css">
     <link rel="stylesheet" href="public/colors/general.css">
@@ -19,7 +19,7 @@
         <pre class="terminal" id="terminal_color">Connecting...</pre>
 
         <div class="menu" id="connect_menu">
-            <div class="row">
+            <div class="row full">
                 <p id="error_message"></p>
             </div>
             <div class="row">
@@ -38,19 +38,35 @@
                 <label for="ssh_password">Password</label>
                 <input type="password" name="password" id="ssh_password" autocomplete="off">
             </div>
-            <div class="row">
-                <button id="connect_button">Connect</button>
+            <div class="row full">
+                <button class="round-bottom fast" id="connect_button">Connect</button>
             </div>
         </div>
 
-        <div class="contextmenu" id="context_menu">
-            <div class="item">
-                <i class="fa fa-cut"></i>
-                <span>Copy</span>
+        <!-- Settings menu -->
+        <button id="settings_button">+</button>
+
+        <div class="menu close" id="settings_menu">
+            <div class="row full">
+                <h1>Settings</h1>
             </div>
-            <div class="item">
-                <i class="fa fa-clipboard"></i>
-                <span>Paste</span>
+            <div class="row full">
+                <button class="round-top fast" id="settings_button_reload">Reload</button>
+            </div>
+            <div class="row full">
+                <button class="fast" id="settings_button_clear">Clear</button>
+            </div>
+            <div class="row">
+                <label for="settings_input_theme">Theme</label>
+                <select class="round-bottom fast" name="theme" id="settings_input_theme" autocomplete="off">
+                    <option value="ubuntu" selected>Ubuntu</option>
+                    <option value="windows">Windows console</option>
+                    <option value="powershell">Powershell</option>
+                </select>
+            </div>
+            <div class="row">
+                <label for="settings_input_capture">Capture input</label>
+                <input type="checkbox" name="capture" id="settings_input_capture" checked autocomplete="off">
             </div>
         </div>
     </main>

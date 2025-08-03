@@ -1,0 +1,51 @@
+/* 
+Reference: https://i.sstatic.net/9UVnC.png
+Color theme: Windows 10 Console / POWERSHELL 6
+*/
+
+:root {
+    --color-default-fg: rgb(242, 242, 242);
+    --color-default-bg: rgb(12, 12, 12);
+}
+
+/* Foreground colors */
+.color-fg-black { color: rgb(12, 12, 12) !important; }
+.color-fg-red { color: rgb(197, 15, 31) !important; }
+.color-fg-green { color: rgb(19, 161, 14) !important; }
+.color-fg-yellow { color: rgb(193, 156, 0) !important; }
+.color-fg-blue { color: rgb(0, 55, 218) !important; }
+.color-fg-magenta { color: rgb(136, 23, 152) !important; }
+.color-fg-cyan { color: rgb(58, 150, 221) !important; }
+.color-fg-white { color: rgb(204, 204, 204) !important; }
+
+/* Bright foreground colors */
+.color-fg-bright-black { color: rgb(118, 118, 118) !important; }
+.color-fg-bright-red { color: rgb(231, 72, 86) !important; }
+.color-fg-bright-green { color: rgb(22, 198, 12) !important; }
+.color-fg-bright-yellow { color: rgb(249, 241, 165) !important; }
+.color-fg-bright-blue { color: rgb(59, 120, 255) !important; }
+.color-fg-bright-magenta { color: rgb(180, 0, 150) !important; }
+.color-fg-bright-cyan { color: rgb(97, 214, 214) !important; }
+.color-fg-bright-white { color: rgb(242, 242, 242) !important; }
+
+
+
+/* Background colors */
+.color-bg-black { background-color: rgb(12, 12, 12) !important; }
+.color-bg-red { background-color: rgb(197, 15, 31) !important; }
+.color-bg-green { background-color: rgb(19, 161, 14) !important; }
+.color-bg-yellow { background-color: rgb(193, 156, 0) !important; }
+.color-bg-blue { background-color: rgb(0, 55, 218) !important; }
+.color-bg-magenta { background-color: rgb(136, 23, 152) !important; }
+.color-bg-cyan { background-color: rgb(58, 150, 221) !important; }
+.color-bg-white { background-color: rgb(204, 204, 204) !important; }
+
+/* Bright background colors*/
+.color-bg-bright-black { background-color: rgb(118, 118, 118) !important; }
+.color-bg-bright-red { background-color: rgb(231, 72, 86) !important; }
+.color-bg-bright-green { background-color: rgb(22, 198, 12) !important; }
+.color-bg-bright-yellow { background-color: rgb(249, 241, 165) !important; }
+.color-bg-bright-blue { background-color: rgb(59, 120, 255) !important; }
+.color-bg-bright-magenta { background-color: rgb(180, 0, 150) !important; }
+.color-bg-bright-cyan { background-color: rgb(97, 214, 214) !important; }
+.color-bg-bright-white { background-color: rgb(242, 242, 242) !important; }

@@ -1,33 +1,69 @@
-let errorMessage = document.getElementById("error_message");
+// SSH Connection
 let connnectButton = document.getElementById("connect_button");
 let connnectMenu = document.getElementById("connect_menu");
-let terminalColor = document.getElementById("terminal_color");
-let colorTheme = document.getElementById("color_theme");
-let contextMenu = document.getElementById("context_menu");
+let errorMessage = document.getElementById("error_message");
 
-let captureAll = true;
+// Page settings
+let settingsMenu = document.getElementById("settings_menu");
+let settingsButton = document.getElementById("settings_button");
+let settingsReload = document.getElementById("settings_button_reload");
+let settingsClear = document.getElementById("settings_button_clear");
+let settingsTheme = document.getElementById("settings_input_theme");
+let settingsCapture = document.getElementById("settings_input_capture");
+
+// Other elements
+let terminalColor = document.getElementById("terminal_color"); // The terminal text display
+let colorTheme = document.getElementById("color_theme"); // Link to the style sheet
+
+// Is there an ssh connection already?
 let hasSsh = false;
 
-// Disable editing to the terminal
-terminalColor.contentEditable = false;
-
 // Hide context menu
-contextMenu.classList.add("hidden");
+settingsMenu.classList.add("hidden");
 
+// Modifies the path to the terminal theme style sheet
 function changeTheme(fileName = "ubuntu") {
     colorTheme.href = `public/colors/${fileName}.css`
 }
 
-// Alias to change theme
-let setTheme = changeTheme;
+//******
+//* UI *
+//******
 
-function getThemes() {
-    console.log("ubuntu", "windows");
+// Toggle page settings menu
+settingsButton.onclick = function (e) {
+    settingsMenu.classList.remove("hidden");
+    settingsMenu.classList.toggle("open");
+    settingsMenu.classList.toggle("close");
 }
 
-// Custom right click menu
-function contextMenuOpen() {
-    contextMenu.classList.remove("hidden");
+settingsMenu.onanimationend = function (e) {
+    if (e.animationName == "menu-close") {
+        settingsMenu.classList.add("hidden");
+    }
+}
+
+settingsReload.onclick = function (e) {
+    window.location.reload();
+}
+
+settingsClear.onclick = function (e) {
+    if (!hasSsh) return;
+
+    terminalColor.innerHTML = "";
+    sendCommand("clear");
+}
+
+settingsTheme.onchange = function (e) {
+    changeTheme(settingsTheme.value);
+}
+
+window.onmousedown = function (e) {
+    // Close menu if clicked to the side
+    if (!settingsMenu.contains(e.target)) {
+        settingsMenu.classList.remove("open");
+        settingsMenu.classList.add("close");
+    }
 }
 
 //********
@@ -74,8 +110,7 @@ window.onkeydown = function (e) {
 
     //console.log(e);
 
-    // Do not enable F key functions, capture them instead
-    if (captureAll) {
+    if (settingsCapture.checked) {
         e.preventDefault();
     }
 
@@ -87,6 +122,12 @@ window.onkeydown = function (e) {
     if (e.ctrlKey) {
         let charCode = e.charCode || e.which || e.keyCode;
     
+        // Special: Reload page if Ctrl + F5c was pressed
+        if (e.key == "F5") {
+            window.location.reload();
+            return;
+        }
+
         if (charCode >= 65 && charCode <= 90) { // From A to Z (uppercase)
             codeOut = String.fromCharCode(charCode - 64);
         } else if (charCode === 32) {
@@ -224,8 +265,21 @@ ws.onopen = function (e) {
     console.log("Socket opened!", e);
 
     terminalColor.innerHTML = `Websocket connection successful! Please provide ssh credentials to continue.
-<span class="color-fg-yellow effect-bold">WARNING: This is NOT an encrypted channel. Meaning, your password can be easily stolen!</span>
 
+<span class="color-fg-yellow">┏┫Warning┣━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓</span>
+<span class="color-fg-yellow">┃</span> <span class="effect-bold">This page uses a non-encrypted channel!</span>                      <span class="color-fg-yellow">┃</span>
+<span class="color-fg-yellow">┃</span> This means that EVERY data you send or receive is travelling <span class="color-fg-yellow">┃</span>
+<span class="color-fg-yellow">┃</span> in plain text. Even your passwords, and ip addresses.        <span class="color-fg-yellow">┃</span>
+<span class="color-fg-yellow">┃</span> Be careful, while using this page!                           <span class="color-fg-yellow">┃</span>
+<span class="color-fg-yellow">┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛</span>
+
+<span class="color-fg-cyan">┏┫Note┣━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓</span>
+<span class="color-fg-cyan">┃</span> Once the ssh connection is made, every keypress is captured.             <span class="color-fg-cyan">┃</span>
+<span class="color-fg-cyan">┃</span> This means if you press for example Ctrl + F to search the page,         <span class="color-fg-cyan">┃</span>
+<span class="color-fg-cyan">┃</span> nothing will happen, instead, the terminal gets the keypress information.<span class="color-fg-cyan">┃</span>
+<span class="color-fg-cyan">┃</span> Because of this, page reloading is not possible trough F5,               <span class="color-fg-cyan">┃</span>
+<span class="color-fg-cyan">┃</span> so to reload the page press Ctrl + F5                                    <span class="color-fg-cyan">┃</span>
+<span class="color-fg-cyan">┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛</span>
 
 
 <span class="color-fg-black">FG</span> <span class="color-bg-black">BG</span> \
@@ -257,7 +311,6 @@ ws.onopen = function (e) {
 
 Blink <span class="effect-slow-blink">Slow</span> \
 <span class="effect-fast-blink">Fast</span>
-
 `;
 };
 
@@ -336,7 +389,6 @@ ws.onmessage = function (e) {
                 switch (data.message.type) {
                     // New text content
                     case "html":
-                        console.log(data.message.value);
                         terminalColor.innerHTML += `${data.message.value}`;
                         break;
 

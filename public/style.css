@@ -1,12 +1,16 @@
 :root {
     --color-default-fg: white;
     --color-default-bg: black;
-    
+    --color-default-menu-bg: #666666;
+    --color-default-menu-border: #888888;
+
     --default-font: monospace;
     --default-font-size: 20px;
     
     --terminal-font: monospace;
     --terminal-font-size: 16px;
+
+    --menu-anim-speed: 0.25s;
 }
 
 body {
@@ -55,7 +59,9 @@ body {
 
     z-index: 20;
 
-    background-color: #88888888;
+    background-color: var(--color-default-menu-bg);
+
+    box-shadow: 5px 5px 10px black;
 
     font-family: var(--default-font);
     font-size: var(--default-font-size);
@@ -71,53 +77,83 @@ body {
     height: 1fr;
 }
 
-.menu .row:first-child, .menu .row:last-child {
+.menu .row.full  {
     grid-template-columns: 1fr;
     min-height: 16.66%;
+}
+
+.menu .row *.fast {
+    transition: 0.1s all !important;
+}
+
+.menu .row *.round-bottom {
+    border-radius: 5px;
+    border-top-left-radius: 3px;
+    border-top-right-radius: 3px;
+}
+
+.menu .row *.round-top {
+    border-radius: 5px;
+    border-bottom-left-radius: 3px;
+    border-bottom-right-radius: 3px;
+}
+
+.menu .row input, .menu .row button, .menu .row select {
+    font-family: inherit;
+    font-size: inherit;
+
+    background-color: transparent;
+    color: white;
+    border: 2px solid var(--color-default-menu-border);
+    border-radius: 3px;
+
+    transition: 0.25s all;
 }
 
 .menu .row input {
     width: auto;
     min-width: 3em;
 
-    font-family: inherit;
-    font-size: inherit;
-
     outline: none;
-
-    background-color: transparent;
-    color: white;
-    border: 2px solid #888888;
-    border-radius: 3px;
 }
 
-.menu #connect_button {
-    font-family: inherit;
-    font-size: inherit;
+.menu .row input[type="checkbox"] {
+    width: 30px;
+    height: 30px;
 
-    background-color: transparent;
-    color: white;
-    border: 2px solid #888888;
-    border-radius: 5px;
-    border-top-left-radius: 3px;
-    border-top-right-radius: 3px;
+    margin: 0px;
+    padding: 0px;
+}
 
+.menu .row h1 {
+    margin: 0px;
+
+    text-align: center;
+}
+
+/* Menu <button> */
+.menu button {
     box-shadow: 1px 1px 0px #888888;
-
-    transition: 0.25s all;
 }
 
-.menu #connect_button:hover {
-    background-color: #88888888;
+.menu button:hover {
+    background-color: var(--color-default-menu-border);
     border-color: #ffffff88;
     text-shadow: 2px 2px 5px #000000;
-
-    transition: 0.1s all;
 }
 
-.menu #connect_button:active {
+.menu button:active {
     transform: translate(1px, 1px);
     box-shadow: 0px 0px 0px transparent;
+}
+
+/* Menu <select> */
+.menu select {
+    box-shadow: 1px 1px 0px #888888;
+}
+
+.menu select:hover {
+    filter: brightness(1.1);
 }
 
 .menu #error_message {
@@ -126,6 +162,7 @@ body {
     margin: auto;
 }
 
+/* Terminal styling */
 .terminal {
     position: fixed;
 
@@ -149,17 +186,19 @@ body {
 
     z-index: 0;
 
-    white-space: pre;
-    word-wrap: normal;
+    white-space: pre-wrap;
+    word-wrap: break-word;
 
     overflow-y: scroll;
-    overflow-x: hidden;
+    /*overflow-x: auto;*/
 
 }
 .terminal span {
     white-space: inherit;
     word-wrap: inherit;
     user-select: inherit;
+
+    z-index: inherit;
 }
 
 .terminal::selection, .terminal span::selection {
@@ -167,29 +206,68 @@ body {
     color: var(--color-default-bg);
 }
 
-.terminal span#terminal_text_display {
-    background-color: var(--color-default-bg);
+/* Settings menu button */
+#settings_button {
+    position: fixed;
+    display: block;
+
+    aspect-ratio: 1;
+
+    top: 5px;
+    right: 5px;
+
+    margin: 0px;
+    padding: 10px;
+
+    width: 50px;
+    height: 50px;
+
+    z-index: 30;
+
+    background-color: var(--color-default-menu-bg);
     color: var(--color-default-fg);
+
+    border: 3px solid var(--color-default-menu-border);
+    border-radius: 5px;
 }
 
-.terminal span#terminal_text_display #cursor {
-    background-color: inherit;
-    color: inherit;
+#settings_button:hover {
+    filter: brightness(1.1);
 }
 
-/* Right-click menu */
-.contextmenu {
-    z-index: 100;
-
-    background-color: #88888888;
-    color: var(--color-default-fg);
-
-    border-radius: 10px;
-    border: 2px solid #888888;
-
-    width: 200px;
+#settings_button:active {
+    filter: brightness(1.2);
 }
 
-.contextmenu .item {
-    width: 100%;
+/* Settings menu */
+#settings_menu {
+    z-index: 30;
+}
+
+#settings_menu.open {
+    animation: menu-open var(--menu-anim-speed) ease-out backwards;
+}
+
+#settings_menu.close {
+    animation: menu-close var(--menu-anim-speed) ease-in backwards;
+}
+
+@keyframes menu-open {
+    0% {
+        opacity: 0;
+    }
+
+    100% {
+        opacity: 1;
+    }
+}
+
+@keyframes menu-close {
+    0% {
+        opacity: 1;
+    }
+    
+    100% {
+        opacity: 0;
+    }
 }
