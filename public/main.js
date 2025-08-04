@@ -366,6 +366,9 @@ ws.onclose = function (e) {
 Reason: ${reason}`;
     terminalColor.contentEditable = false;
     hasSsh = false;
+
+    //Try reopening the connection
+    ws = new WebSocket(`wss://${server}/websocket`);
 };
 
 
