@@ -260,7 +260,7 @@ window.onkeydown = function (e) {
 
 //Create websocket
 const server = window.location.host;
-ws = new WebSocket(`ws://${server}/websocket`);
+ws = new WebSocket(`wss://${server}/websocket`);
 
 //Websocket functions
 function sendCommand(command) {
