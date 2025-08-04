@@ -57,7 +57,20 @@ settingsMenu.onanimationend = function (e) {
     }
 }
 
+function setInURL(name, value) {
+    var str = location.search;
+    if (new RegExp("[&?]"+name+"([=&].+)?$").test(str)) {
+        str = str.replace(new RegExp("(?:[&?])"+name+"[^&]*", "g"), "")
+    }
+    str += "&";
+    str += name + "=" + value;
+    str = "?" + str.slice(1);
+
+    location.assign(location.origin + location.pathname + str + location.hash)
+};
+
 settingsReload.onclick = function (e) {
+    setInURL("username", "barni");
     window.location.reload();
 }
 
@@ -366,9 +379,6 @@ ws.onclose = function (e) {
 Reason: ${reason}`;
     terminalColor.contentEditable = false;
     hasSsh = false;
-
-    //Try reopening the connection
-    ws = new WebSocket(`wss://${server}/websocket`);
 };
 
 
